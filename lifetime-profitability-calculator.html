@@ -1,0 +1,1939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lifetime Profitability Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12203A;
+    --ink-soft:#3C4A63;
+    --paper:#FAF8F4;
+    --panel:#FFFFFF;
+    --line:#E4E1D8;
+    --muted:#8A8F7E;
+    --muted-2:#96A0AC;
+    --profit:#1C6E4A;
+    --profit-bg:#E9F3EE;
+    --cost:#A13D2B;
+    --cost-bg:#F8ECE9;
+    --cost-2:#C97A3A;
+    --accent:#B8862E;
+    --focus:#12203A;
+    --subtotal-bg:#E7EEF5;
+    --subtotal-border:#C9D7E6;
+    --input-bg:#F2F6FA;
+    --input-border:#B9CADC;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding:32px 24px 64px;
+  }
+
+  .wrap{max-width:1080px;margin:0 auto;}
+
+  /* ---------- Header ---------- */
+  header{margin-bottom:28px;}
+  .eyebrow{
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted-2);font-weight:600;margin-bottom:6px;
+  }
+  h1{
+    font-family:'Source Serif 4', serif;
+    font-weight:600;
+    font-size:28px;
+    margin:0 0 4px;
+    color:var(--ink);
+    letter-spacing:-0.01em;
+  }
+  .sub{color:var(--ink-soft);font-size:13.5px;max-width:680px;line-height:1.5;}
+
+  /* ---------- Export toolbar ---------- */
+  .export-bar{display:flex;gap:10px;margin-bottom:24px;}
+  .export-btn{
+    font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;
+    color:var(--ink);background:var(--panel);
+    border:1.5px solid var(--input-border);border-radius:6px;
+    padding:9px 18px;cursor:pointer;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .export-btn:hover{background:var(--input-bg);border-color:var(--focus);}
+  .export-btn:active{transform:scale(0.98);}
+
+  @media print{
+    body{padding:0 12px;background:#fff;}
+    .export-bar{display:none !important;}
+    .schedule-scroll{max-height:none !important;overflow:visible !important;}
+    .pl-card, .wf-card, .hcard, .input-group{page-break-inside:avoid;break-inside:avoid;}
+    * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  }
+
+  /* ---------- Input panel ---------- */
+  .input-group{margin-bottom:14px;}
+  .input-group-title{
+    font-size:11px;text-transform:uppercase;letter-spacing:.1em;
+    color:var(--muted-2);font-weight:600;margin-bottom:8px;
+  }
+  .input-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(155px, 1fr));
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .field{
+    background:var(--panel);
+    padding:14px 16px 12px;
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .field label{
+    font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--muted-2);font-weight:600;
+  }
+  .field .input-row{display:flex;align-items:center;gap:6px;}
+  .field .input-row .prefix{color:var(--ink-soft);font-size:14px;font-family:'IBM Plex Mono',monospace;font-weight:600;}
+  .field input, .field select{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:15px;font-weight:600;
+    color:var(--ink);
+    background:var(--input-bg);
+    border:1.5px solid var(--input-border);
+    border-radius:6px;
+    width:100%;
+    padding:6px 8px;
+    outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .field select{cursor:pointer;font-size:13px;}
+  .field input:hover, .field select:hover{border-color:#8FA6BE;}
+  .field input:focus, .field select:focus{
+    background:var(--panel);
+    border-color:var(--focus);
+    box-shadow:0 0 0 3px rgba(18,32,58,0.14);
+  }
+  .field .unit{font-size:11.5px;color:var(--muted-2);}
+
+  .inputs-wrap{margin-bottom:28px;}
+
+  /* ---------- Waterfall composition charts (Chart.js) ---------- */
+  .charts-row{
+    display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:28px;
+  }
+  .wf-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:18px 20px 16px;
+  }
+  .wf-title{
+    font-size:11px;text-transform:uppercase;letter-spacing:.1em;
+    color:var(--muted-2);font-weight:600;margin-bottom:4px;
+  }
+  .wf-subtitle{font-size:11.5px;color:var(--muted);margin-bottom:14px;}
+  .wf-canvas-wrap{position:relative;width:100%;}
+  .wf-legend{
+    display:flex;gap:18px;margin-top:10px;flex-wrap:wrap;
+    font-size:12px;color:var(--ink-soft);
+  }
+  .wf-legend .item{display:flex;align-items:center;gap:6px;}
+  .wf-legend .swatch{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
+  /* ---------- Highlight cards ---------- */
+  .highlights{
+    display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px;
+    margin-bottom:28px;
+  }
+  .hcard{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:20px 22px;
+  }
+  .hcard.headline{background:var(--ink);border-color:var(--ink);}
+  .hcard .hlabel{
+    font-size:11px;text-transform:uppercase;letter-spacing:.1em;
+    color:var(--muted-2);font-weight:600;margin-bottom:8px;
+  }
+  .hcard.headline .hlabel{color:#8FA0BC;}
+  .hcard .hvalue{
+    font-family:'Source Serif 4', serif;
+    font-size:34px;font-weight:600;color:var(--ink);
+    letter-spacing:-0.01em;
+  }
+  .hcard.headline .hvalue{color:#FAF8F4;font-size:36px;}
+  .hcard .hformula{font-size:11px;color:var(--muted-2);margin-top:8px;font-family:'IBM Plex Mono',monospace;}
+  .hcard.headline .hformula{color:#6E7FA0;}
+
+  /* ---------- P&L tables (summary + detail) ---------- */
+  .pl-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    overflow:hidden;margin-bottom:20px;
+  }
+  .pl-header{
+    padding:16px 22px 12px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:baseline;
+  }
+  .pl-header h2{
+    font-family:'Source Serif 4',serif;font-size:17px;font-weight:600;margin:0;color:var(--ink);
+  }
+  .pl-header span{font-size:11px;color:var(--muted-2);}
+
+  table{width:100%;border-collapse:collapse;}
+  tbody tr{border-bottom:1px solid var(--line);}
+  tbody tr:last-child{border-bottom:none;}
+  td{padding:12px 22px;vertical-align:top;}
+  td.label-cell{width:55%;}
+  .line-label{font-size:14.5px;font-weight:500;color:var(--ink);}
+  .line-formula{
+    font-size:11.5px;color:var(--muted-2);margin-top:4px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .line-note{
+    font-size:11px;color:var(--accent);margin-top:5px;font-style:italic;
+  }
+  td.amount-cell{
+    text-align:right;font-family:'IBM Plex Mono',monospace;
+    font-size:15.5px;font-weight:500;white-space:nowrap;
+  }
+  .amount-income{color:var(--ink);}
+  .amount-cost{color:var(--cost);}
+
+  tr.subtotal-row{background:var(--subtotal-bg);border-bottom:1px solid var(--subtotal-border);}
+  tr.subtotal-row .line-label{font-weight:600;font-size:15px;}
+  tr.subtotal-row td.amount-cell{font-weight:600;font-size:16px;color:var(--ink);}
+
+  tr.grand-total-row{background:var(--ink);}
+  tr.grand-total-row .line-label{font-weight:600;font-size:16px;color:#FAF8F4;}
+  tr.grand-total-row .line-formula{color:#8FA0BC;}
+  tr.grand-total-row td.amount-cell{font-weight:600;font-size:19px;color:#FAF8F4;}
+
+  .pl-note{
+    padding:0 22px 14px;font-size:11.5px;color:var(--muted);
+    border-bottom:1px solid var(--line);line-height:1.5;
+  }
+
+  /* ---------- Monthly schedule tables (EMI + lender cashflow) ---------- */
+  .schedule-scroll{max-height:440px;overflow-y:auto;}
+  .schedule-scroll table{width:100%;border-collapse:collapse;}
+  .schedule-scroll thead th{
+    position:sticky;top:0;background:var(--panel);
+    text-align:right;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--muted-2);font-weight:600;padding:10px 16px;
+    border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  .schedule-scroll thead th:first-child{text-align:left;}
+  .schedule-scroll tbody td{
+    padding:7px 16px;text-align:right;
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink);
+    border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  .schedule-scroll tbody td:first-child{
+    text-align:left;font-family:'IBM Plex Sans',sans-serif;font-weight:500;color:var(--ink-soft);
+  }
+  .schedule-scroll tbody tr:last-child td{border-bottom:none;}
+  .schedule-scroll .neg{color:var(--cost);}
+  .schedule-scroll .cooldown-row td{background:#FBF3E3;}
+  .schedule-scroll .month-zero-row td{background:var(--subtotal-bg);font-weight:600;color:var(--ink);}
+
+  footer{
+    font-size:11.5px;color:var(--muted-2);text-align:center;margin-top:24px;
+    line-height:1.6;
+  }
+
+  @media (max-width:860px){
+    .highlights{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">FP&A · Lending Book</div>
+    <h1>Lifetime Profitability Calculator</h1>
+    <div class="sub">Synthetic lifetime P&amp;L for a new loan disbursement cohort, built up from Interest Income through NIM and NOI to Variable Profit. Recalculates instantly on any input change.</div>
+  </header>
+
+  <div class="export-bar">
+    <button class="export-btn" id="exportPdfBtn" onclick="exportToPDF()">
+      <span>Export PDF</span>
+    </button>
+    <button class="export-btn" id="exportExcelBtn" onclick="exportToExcel()">
+      <span>Export Excel</span>
+    </button>
+  </div>
+
+  <!-- ============ INPUTS ============ -->
+  <div class="inputs-wrap">
+    <div class="input-group">
+      <div class="input-group-title">Loan Terms</div>
+      <div class="input-grid">
+        <div class="field">
+          <label for="loanType">Loan Type</label>
+          <div class="input-row">
+            <select id="loanType">
+              <option value="standard">Standard (EMI from Month 1)</option>
+              <option value="cooldown" selected>Cooldown / Moratorium</option>
+            </select>
+          </div>
+          <span class="unit">repayment structure</span>
+        </div>
+        <div class="field">
+          <label for="disbursement">Disbursement Amount</label>
+          <div class="input-row">
+            <span class="prefix">₹</span>
+            <input id="disbursement" type="number" value="1000000" step="100000" min="0">
+          </div>
+          <span class="unit">principal, ₹</span>
+        </div>
+        <div class="field">
+          <label for="irr">IRR</label>
+          <div class="input-row">
+            <input id="irr" type="number" value="20" step="0.1" min="0">
+            <span class="prefix">%</span>
+          </div>
+          <span class="unit">annualized, customer rate</span>
+        </div>
+        <div class="field">
+          <label for="tenure">Total Tenure</label>
+          <div class="input-row">
+            <input id="tenure" type="number" value="9" step="1" min="1">
+          </div>
+          <span class="unit">months</span>
+        </div>
+        <div class="field" id="cooldownField" style="display:flex;">
+          <label for="cooldownMonths">Cooldown Period</label>
+          <div class="input-row">
+            <input id="cooldownMonths" type="number" value="3" step="1" min="0">
+          </div>
+          <span class="unit">months, interest-only</span>
+        </div>
+        <div class="field">
+          <label for="financeCost">Finance Cost Rate</label>
+          <div class="input-row">
+            <input id="financeCost" type="number" value="11" step="0.1" min="0">
+            <span class="prefix">%</span>
+          </div>
+          <span class="unit">annualized, cost of funds</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <div class="input-group-title">Income Levers</div>
+      <div class="input-grid">
+        <div class="field">
+          <label for="pfIncomeRate">PF + Doc Income</label>
+          <div class="input-row">
+            <input id="pfIncomeRate" type="number" value="3" step="0.1" min="0">
+            <span class="prefix">%</span>
+          </div>
+          <span class="unit">of Disbursement, upfront</span>
+        </div>
+        <div class="field">
+          <label for="crossSellIncomeRate">Cross Sell Income</label>
+          <div class="input-row">
+            <input id="crossSellIncomeRate" type="number" value="0.5" step="0.1" min="0">
+            <span class="prefix">%</span>
+          </div>
+          <span class="unit">of Disbursement, lifetime</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <div class="input-group-title">Variable Cost Levers</div>
+      <div class="input-grid">
+        <div class="field">
+          <label for="cacRate">CAC</label>
+          <div class="input-row">
+            <input id="cacRate" type="number" value="2" step="0.1" min="0">
+            <span class="prefix">%</span>
+          </div>
+          <span class="unit">of Disbursement, lifetime</span>
+        </div>
+        <div class="field">
+          <label for="processingCostRate">Processing Costs</label>
+          <div class="input-row">
+            <input id="processingCostRate" type="number" value="0" step="0.1" min="0">
+            <span class="prefix">%</span>
+          </div>
+          <span class="unit">of Disbursement, lifetime</span>
+        </div>
+        <div class="field">
+          <label for="lossRate">Credit Costs</label>
+          <div class="input-row">
+            <input id="lossRate" type="number" value="6" step="0.1" min="0">
+            <span class="prefix">%</span>
+          </div>
+          <span class="unit">of Disbursement, lifetime</span>
+        </div>
+        <div class="field">
+          <label for="cgtmseRate">CGTMSE Costs</label>
+          <div class="input-row">
+            <input id="cgtmseRate" type="number" value="0" step="0.1" min="0">
+            <span class="prefix">%</span>
+          </div>
+          <span class="unit">of Disbursement, lifetime</span>
+        </div>
+        <div class="field">
+          <label for="salaryCostRate">Salary Costs</label>
+          <div class="input-row">
+            <input id="salaryCostRate" type="number" value="0" step="0.1" min="0">
+            <span class="prefix">%</span>
+          </div>
+          <span class="unit">directly attributable, of Disbursement</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ HIGHLIGHTS ============ -->
+  <div class="highlights">
+    <div class="hcard headline">
+      <div class="hlabel">Variable Profit</div>
+      <div class="hvalue" id="hVariableProfit">₹0</div>
+      <div class="hformula">NOI − Variable Costs</div>
+    </div>
+    <div class="hcard">
+      <div class="hlabel">RoA (Lifetime)</div>
+      <div class="hvalue" id="hRoaLifetime">0.00%</div>
+      <div class="hformula">Variable Profit ÷ Disbursement</div>
+    </div>
+    <div class="hcard">
+      <div class="hlabel">RoA (Annualized)</div>
+      <div class="hvalue" id="hRoaAnnualized">0.00%</div>
+      <div class="hformula">RoA (Lifetime) ÷ (Tenure / 12)</div>
+    </div>
+  </div>
+
+  <!-- ============ COMPOSITION CHARTS ============ -->
+  <div class="charts-row">
+    <div class="wf-card">
+      <div class="wf-title">Margin Composition — as % of Gross Interest Income</div>
+      <div class="wf-subtitle">Every P&amp;L line, cumulative, expressed against Gross Interest Income as the fixed base.</div>
+      <div class="wf-canvas-wrap" id="wfGiiWrap">
+        <canvas id="wfGiiChart" role="img" aria-label="Waterfall chart of the lifetime P&amp;L cascading from Gross Interest Income to Variable Profit, expressed as percent of Gross Interest Income"></canvas>
+      </div>
+      <div class="wf-legend">
+        <span class="item"><span class="swatch" style="background:var(--ink)"></span>Subtotal</span>
+        <span class="item"><span class="swatch" style="background:var(--profit)"></span>Adds</span>
+        <span class="item"><span class="swatch" style="background:var(--cost)"></span>Subtracts</span>
+      </div>
+    </div>
+    <div class="wf-card">
+      <div class="wf-title">RoA Tree — as % of Disbursement Amount</div>
+      <div class="wf-subtitle">The same cumulative build, expressed against Disbursement Amount — i.e. each line's contribution to RoA.</div>
+      <div class="wf-canvas-wrap" id="wfRoaWrap">
+        <canvas id="wfRoaChart" role="img" aria-label="Waterfall chart of the lifetime P&amp;L cascading from Gross Interest Income to Variable Profit, expressed as percent of Disbursement Amount"></canvas>
+      </div>
+      <div class="wf-legend">
+        <span class="item"><span class="swatch" style="background:var(--ink)"></span>Subtotal</span>
+        <span class="item"><span class="swatch" style="background:var(--profit)"></span>Adds</span>
+        <span class="item"><span class="swatch" style="background:var(--cost)"></span>Subtracts</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SUMMARY P&L ============ -->
+  <div class="pl-card">
+    <div class="pl-header">
+      <h2>Lifetime Summary P&amp;L</h2>
+      <span>per disbursement cohort</span>
+    </div>
+    <table>
+      <tbody id="plSummaryBody">
+        <!-- rows injected by JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ LINE ITEM DETAIL ============ -->
+  <div class="pl-card">
+    <div class="pl-header">
+      <h2>Line Item Detail</h2>
+      <span>formula &amp; assumptions behind each line</span>
+    </div>
+    <table>
+      <tbody id="plDetailBody">
+        <!-- rows injected by JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ LOAN EMI SCHEDULE — CUSTOMER'S PERSPECTIVE ============ -->
+  <div class="pl-card">
+    <div class="pl-header">
+      <h2>Loan Repayment Schedule</h2>
+      <span>customer's perspective, at IRR</span>
+    </div>
+    <div class="pl-note">Customer's contracted repayment schedule at IRR. During a cooldown period, Payment = interest only and Principal = ₹0 (highlighted below); once EMI begins, Payment = EMI = Interest + Principal.</div>
+    <div class="schedule-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Opening Balance</th>
+            <th>Payment</th>
+            <th>Interest</th>
+            <th>Principal</th>
+            <th>Closing Balance</th>
+          </tr>
+        </thead>
+        <tbody id="emiScheduleBody">
+          <!-- rows injected by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ LENDER CASH FLOW SCHEDULE — LENDER'S PERSPECTIVE ============ -->
+  <div class="pl-card">
+    <div class="pl-header">
+      <h2>Lender Cash Flow Schedule</h2>
+      <span>lender's perspective, ties to Variable Profit</span>
+    </div>
+    <div class="pl-note">Month 0: funding drawn offsets the disbursement paid to the customer (net zero); PF Income, Cross Sell Income, CAC, Processing Costs and CGTMSE Costs are recognized here, at origination. Months 1+: Customer Collection = Payment at IRR; Finance Cost Serviced = debt service at Finance Cost Rate. Salary Costs are spread evenly across every month. Credit Costs (one-time write-off) and NPA Interest Reversal (month-by-month) both start at the presumed-NPA point — Tenure/2 — used above. Cumulative Cash Flow at the final month reconciles exactly to Variable Profit.</div>
+    <div class="schedule-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Customer Collection</th>
+            <th>Finance Cost Serviced</th>
+            <th>Other Income</th>
+            <th>Other Costs</th>
+            <th>Net Cash Flow</th>
+            <th>Cumulative Cash Flow</th>
+          </tr>
+        </thead>
+        <tbody id="cashflowScheduleBody">
+          <!-- rows injected by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    All figures are lifetime totals for a single disbursement cohort, not annual run-rate. The detail table below shows the exact formula and assumption behind every line item.
+  </footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+(function(){
+
+  // ---------------------------------------------------------------
+  // 1. AMORTIZATION ENGINE
+  //    Standard PMT/IPMT logic on a declining balance, monthly rate = annual/12.
+  //
+  //    Supports two loan structures via `cooldownMonths`:
+  //    - Standard (cooldownMonths = 0): EMI from month 1, as before.
+  //    - Cooldown / moratorium (cooldownMonths > 0): the first
+  //      `cooldownMonths` periods are interest-only (balance untouched),
+  //      then EMI is computed on the full balance and amortized over the
+  //      remaining (tenure - cooldownMonths) periods.
+  //
+  //    buildSchedule() is the single source of truth — every period's
+  //    interest is computed once here, and amortizationSchedule(),
+  //    getNpaScheduleRows(), and the Lender Cash Flow Schedule below
+  //    all just read off it.
+  // ---------------------------------------------------------------
+  function buildSchedule(principal, annualRatePct, months, cooldownMonths){
+    const r = (annualRatePct / 100) / 12;
+    const cooldown = Math.max(0, Math.min(cooldownMonths || 0, months - 1));
+    const amortMonths = months - cooldown;
+    let balance = principal;
+    const rows = [];
+
+    for (let n = 1; n <= cooldown; n++){
+      const interest = balance * r; // interest-only: balance unchanged
+      rows.push({ period: n, openingBalance: balance, payment: interest, interest, principalPaid: 0, closingBalance: balance });
+    }
+
+    let emi = 0;
+    if (amortMonths > 0){
+      if (r === 0){
+        emi = balance / amortMonths;
+      } else {
+        emi = balance * r * Math.pow(1 + r, amortMonths) / (Math.pow(1 + r, amortMonths) - 1);
+      }
+      for (let i = 1; i <= amortMonths; i++){
+        const opening = balance;
+        const interest = balance * r;
+        const principalPaid = emi - interest;
+        balance -= principalPaid;
+        rows.push({ period: cooldown + i, openingBalance: opening, payment: emi, interest, principalPaid, closingBalance: balance });
+      }
+    }
+
+    return { emi, rows };
+  }
+
+  function amortizationSchedule(principal, annualRatePct, months, cooldownMonths = 0){
+    const { emi, rows } = buildSchedule(principal, annualRatePct, months, cooldownMonths);
+    const totalInterest = rows.reduce((s, row) => s + row.interest, 0);
+    return { emi, totalInterest };
+  }
+
+  // Returns the cooldown (interest-only) period in months for the
+  // currently selected loan type, clamped so amortMonths stays >= 1.
+  function getCooldownMonths(inp){
+    if (inp.loanType !== 'cooldown') return 0;
+    return Math.max(0, Math.min(inp.cooldownMonths || 0, inp.tenure - 1));
+  }
+
+  // The NPA principal (Disbursement × Credit Cost Rate) run through its
+  // own amortization schedule at IRR. Both NPA Interest Reversal (P&L)
+  // and the Lender Cash Flow Schedule read from this same schedule, so
+  // the reversal's monthly timing is identical everywhere it's used.
+  function getNpaScheduleRows(inp){
+    const npaPrincipal = inp.disbursement * (inp.lossRate / 100);
+    return buildSchedule(npaPrincipal, inp.irr, inp.tenure, getCooldownMonths(inp)).rows;
+  }
+
+  // The period from which the account is presumed to have turned
+  // non-performing — the midpoint of tenure.
+  function getNpaStartPeriod(inp){
+    return inp.tenure / 2;
+  }
+
+  // Looks up a line's already-computed lifetime value by id across all
+  // sections — used so the cashflow schedule and Excel export always
+  // match whatever the P&L tables above are currently showing.
+  function findLineValue(sections, lineId){
+    for (const section of sections){
+      const line = section.lines.find(l => l.id === lineId);
+      if (line) return line.value;
+    }
+    return 0;
+  }
+
+  // ---------------------------------------------------------------
+  // 2. P&L STRUCTURE
+  //    The P&L is a sequence of SECTIONS. Each section has its own
+  //    line items and rolls up into a subtotal.
+  //
+  //    subtotalStyle: 'cumulative' -> subtotal = running total carried
+  //       forward from the previous section, plus this section's lines
+  //       (used for Interest Income -> NIM -> NOI).
+  //    subtotalStyle: 'costPool'  -> subtotal shown is just this
+  //       section's own total (e.g. Variable Costs), and a separate
+  //       `finalLabel` row is added afterwards for the running total
+  //       after this section is applied (e.g. Variable Profit).
+  //
+  //    TO EXTEND (e.g. add Fixed Costs -> PBT below Variable Profit):
+  //    push a new section object here with its own `lines` array.
+  //    Each line needs: id, label, sign (+1/-1), formula (subtext),
+  //    note (optional caveat), and compute(inputs, values) where
+  //    `values` gives access to any previously computed line's value
+  //    by id (e.g. values.grossInterestIncome). The summary table,
+  //    detail table, and both waterfall charts all re-derive
+  //    automatically from this config — no other code needs to change.
+  // ---------------------------------------------------------------
+  const SECTIONS = [
+    {
+      id: 'interestIncomeSection',
+      lines: [
+        {
+          id: 'grossInterestIncome',
+          label: 'Gross Interest Income',
+          sign: +1,
+          formula: (inp) => getCooldownMonths(inp) > 0
+            ? `Σ IPMT(IRR/12, n, Tenure, Disbursement) — interest-only for first ${getCooldownMonths(inp)}m, EMI over remaining ${inp.tenure - getCooldownMonths(inp)}m`
+            : 'Σ IPMT(IRR/12, n, Tenure, Disbursement)',
+          note: null,
+          compute: (inp) => amortizationSchedule(inp.disbursement, inp.irr, inp.tenure, getCooldownMonths(inp)).totalInterest
+        },
+        {
+          id: 'npaReversal',
+          label: 'NPA Interest Reversal',
+          sign: -1,
+          formula: 'Σ IPMT(IRR/12, n, Tenure, Disbursement × Credit Cost Rate) for n ≥ Tenure/2',
+          note: 'NPA principal = Disbursement × Credit Cost Rate. Interest is reversed from the midpoint of tenure onward, when the account is presumed to have turned non-performing. Follows the same loan structure (standard or cooldown) as Gross Interest Income.',
+          compute: (inp) => {
+            const rows = getNpaScheduleRows(inp);
+            const startPeriod = getNpaStartPeriod(inp);
+            return rows.reduce((s, row) => s + (row.period >= startPeriod ? row.interest : 0), 0);
+          }
+        }
+      ],
+      subtotalStyle: 'cumulative',
+      subtotalLabel: 'Interest Income',
+      subtotalFormula: 'Gross Interest Income − NPA Interest Reversal'
+    },
+    {
+      id: 'nimSection',
+      lines: [
+        {
+          id: 'financeCost',
+          label: 'Finance Cost',
+          sign: -1,
+          formula: (inp) => getCooldownMonths(inp) > 0
+            ? `Σ IPMT(Finance Cost Rate/12, n, Tenure, Disbursement) — interest-only for first ${getCooldownMonths(inp)}m, EMI over remaining ${inp.tenure - getCooldownMonths(inp)}m`
+            : 'Σ IPMT(Finance Cost Rate/12, n, Tenure, Disbursement)',
+          note: 'Same declining-balance amortization logic as Gross Interest Income, at a different rate.',
+          compute: (inp) => amortizationSchedule(inp.disbursement, inp.financeCost, inp.tenure, getCooldownMonths(inp)).totalInterest
+        }
+      ],
+      subtotalStyle: 'cumulative',
+      subtotalLabel: 'NIM',
+      subtotalFormula: 'Interest Income − Finance Cost'
+    },
+    {
+      id: 'noiSection',
+      lines: [
+        {
+          id: 'pfIncome',
+          label: 'PF + Doc Income',
+          sign: +1,
+          formula: 'PF Income Rate × Disbursement Amount',
+          note: 'Processing fee income, recognized upfront.',
+          compute: (inp) => (inp.pfIncomeRate / 100) * inp.disbursement
+        },
+        {
+          id: 'crossSellIncome',
+          label: 'Cross Sell Income',
+          sign: +1,
+          formula: 'Cross Sell Income Rate × Disbursement Amount',
+          note: null,
+          compute: (inp) => (inp.crossSellIncomeRate / 100) * inp.disbursement
+        }
+      ],
+      subtotalStyle: 'cumulative',
+      subtotalLabel: 'NOI',
+      subtotalFormula: 'NIM + PF Income + Cross Sell Income'
+    },
+    {
+      id: 'variableCostsSection',
+      lines: [
+        {
+          id: 'cac',
+          label: 'Customer acquisition costs',
+          sign: -1,
+          formula: 'CAC Rate × Disbursement Amount',
+          note: 'CAC is a lifetime cost applied once at origination, not annualized.',
+          compute: (inp) => (inp.cacRate / 100) * inp.disbursement
+        },
+        {
+          id: 'processingCosts',
+          label: 'Processing Costs',
+          sign: -1,
+          formula: 'Processing Cost Rate × Disbursement Amount',
+          note: null,
+          compute: (inp) => (inp.processingCostRate / 100) * inp.disbursement
+        },
+        {
+          id: 'creditCosts',
+          label: 'Credit Costs',
+          sign: -1,
+          formula: 'Loss Rate × Disbursement Amount',
+          note: 'Loss Rate is lifetime, not annualized.',
+          compute: (inp) => (inp.lossRate / 100) * inp.disbursement
+        },
+        {
+          id: 'cgtmse',
+          label: 'CGTMSE costs',
+          sign: -1,
+          formula: 'CGTMSE Rate × Disbursement Amount',
+          note: null,
+          compute: (inp) => (inp.cgtmseRate / 100) * inp.disbursement
+        },
+        {
+          id: 'salaryCosts',
+          label: 'Directly attributable salary costs',
+          sign: -1,
+          formula: 'Salary Cost Rate × Disbursement Amount',
+          note: null,
+          compute: (inp) => (inp.salaryCostRate / 100) * inp.disbursement
+        }
+      ],
+      subtotalStyle: 'costPool',
+      subtotalLabel: 'Variable Costs',
+      subtotalFormula: 'Customer Acquisition + Processing + Credit + CGTMSE + Salary Costs',
+      finalLabel: 'Variable Profit',
+      finalFormula: 'NOI − Variable Costs'
+    }
+    // e.g. to add Fixed Costs -> PBT below Variable Profit:
+    // { id:'fixedCostsSection', lines:[ {id:'opex', label:'Opex', sign:-1,
+    //     formula:'Opex % × Disbursement', note:null,
+    //     compute:(inp)=>(inp.opexRate/100)*inp.disbursement} ],
+    //   subtotalStyle:'costPool', subtotalLabel:'Fixed Costs',
+    //   subtotalFormula:'Σ Fixed Costs', finalLabel:'PBT',
+    //   finalFormula:'Variable Profit − Fixed Costs' }
+  ];
+
+  // ---------------------------------------------------------------
+  // 3. FORMATTING (Indian numbering: lakh/crore)
+  // ---------------------------------------------------------------
+  const inrFormatter = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+
+  function formatRupee(value, { showParensIfNegative = true } = {}){
+    const isNeg = value < 0;
+    const absStr = '₹' + inrFormatter.format(Math.round(Math.abs(value)));
+    if (isNeg && showParensIfNegative) return '(' + absStr + ')';
+    return isNeg ? '-' + absStr : absStr;
+  }
+
+  function formatPercent(value){
+    return value.toFixed(2) + '%';
+  }
+
+  // ---------------------------------------------------------------
+  // 4. CORE CALC
+  // ---------------------------------------------------------------
+  function readInputs(){
+    return {
+      disbursement:         parseFloat(document.getElementById('disbursement').value) || 0,
+      loanType:             document.getElementById('loanType').value,
+      irr:                  parseFloat(document.getElementById('irr').value) || 0,
+      tenure:               parseFloat(document.getElementById('tenure').value) || 1,
+      cooldownMonths:       parseFloat(document.getElementById('cooldownMonths').value) || 0,
+      financeCost:          parseFloat(document.getElementById('financeCost').value) || 0,
+      pfIncomeRate:         parseFloat(document.getElementById('pfIncomeRate').value) || 0,
+      crossSellIncomeRate:  parseFloat(document.getElementById('crossSellIncomeRate').value) || 0,
+      cacRate:              parseFloat(document.getElementById('cacRate').value) || 0,
+      processingCostRate:   parseFloat(document.getElementById('processingCostRate').value) || 0,
+      lossRate:             parseFloat(document.getElementById('lossRate').value) || 0,
+      cgtmseRate:           parseFloat(document.getElementById('cgtmseRate').value) || 0,
+      salaryCostRate:       parseFloat(document.getElementById('salaryCostRate').value) || 0,
+    };
+  }
+
+  function computeAll(inputs){
+    const values = {};
+    let running = 0;
+    const sectionsOut = [];
+
+    SECTIONS.forEach(section => {
+      const lineResults = section.lines.map(line => {
+        const value = line.compute(inputs, values);
+        values[line.id] = value;
+        return { ...line, value };
+      });
+      const signedSum = lineResults.reduce((s, l) => s + l.sign * l.value, 0);
+
+      if (section.subtotalStyle === 'cumulative'){
+        running += signedSum;
+        sectionsOut.push({ ...section, lines: lineResults, subtotalValue: running });
+      } else {
+        const costPoolTotal = lineResults.reduce((s, l) => s + l.value, 0);
+        running += signedSum;
+        sectionsOut.push({ ...section, lines: lineResults, subtotalValue: costPoolTotal, finalValue: running });
+      }
+    });
+
+    const grossInterestIncome = values.grossInterestIncome || 0;
+    const noiSection = sectionsOut.find(s => s.subtotalLabel === 'NOI');
+    const noiValue = noiSection ? noiSection.subtotalValue : 0;
+    const variableProfit = running;
+
+    const roaLifetime = inputs.disbursement !== 0 ? (variableProfit / inputs.disbursement) * 100 : 0;
+    const roaAnnualized = inputs.tenure !== 0 ? roaLifetime / (inputs.tenure / 12) : 0;
+
+    return { sections: sectionsOut, grossInterestIncome, noiValue, variableProfit, roaLifetime, roaAnnualized };
+  }
+
+  // ---------------------------------------------------------------
+  // 5. WATERFALL STEP BUILDER
+  //    Walks the same SECTIONS config used by the P&L tables and
+  //    produces an ordered list of steps, each expressed as a % of
+  //    whatever `denom` is passed in (Gross Interest Income for the
+  //    margin composition chart, Disbursement Amount for the RoA tree).
+  //    'flow' steps float between the running total before and after
+  //    the line; 'anchor' steps are full bars from 0 to the subtotal.
+  // ---------------------------------------------------------------
+  function buildWaterfallSteps(sections, denom){
+    const pct = (v) => denom !== 0 ? (v / denom) * 100 : 0;
+    const steps = [];
+    let running = 0;
+
+    sections.forEach(section => {
+      section.lines.forEach(line => {
+        const delta = line.sign * line.value;
+        const from = running;
+        running += delta;
+        steps.push({ label: line.label, kind: 'flow', from: pct(from), to: pct(running) });
+      });
+      if (section.subtotalStyle === 'cumulative'){
+        steps.push({ label: section.subtotalLabel, kind: 'anchor', from: 0, to: pct(running) });
+      } else if (section.finalLabel){
+        steps.push({ label: section.finalLabel, kind: 'anchor', from: 0, to: pct(running) });
+      }
+    });
+
+    return steps;
+  }
+
+  if (typeof ChartDataLabels !== 'undefined'){
+    Chart.register(ChartDataLabels);
+  }
+
+  function waterfallStepValue(step){
+    return step.kind === 'anchor' ? step.to : (step.to - step.from);
+  }
+  function waterfallStepLabel(step){
+    const val = waterfallStepValue(step);
+    const sign = step.kind === 'flow' ? (val >= 0 ? '+' : '') : '';
+    return sign + val.toFixed(1) + '%';
+  }
+  function waterfallStepColor(step){
+    if (step.kind === 'anchor') return '#12203A';
+    return waterfallStepValue(step) >= 0 ? '#1C6E4A' : '#A13D2B';
+  }
+
+  function createWaterfallChart(canvasId){
+    const ctx = document.getElementById(canvasId);
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderRadius: 3, barThickness: 18 }] },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 250 },
+        layout: { padding: { right: 46, left: 6 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (tctx) => {
+                const step = tctx.chart.stepsRef ? tctx.chart.stepsRef[tctx.dataIndex] : null;
+                return step ? waterfallStepLabel(step) : '';
+              }
+            }
+          },
+          datalabels: {
+            clip: false,
+            clamp: true,
+            anchor: 'end',
+            align: 'end',
+            offset: 4,
+            font: { size: 10, weight: '600', family: "'IBM Plex Mono', monospace" },
+            color: (dctx) => {
+              const step = dctx.chart.stepsRef ? dctx.chart.stepsRef[dctx.dataIndex] : null;
+              return step ? waterfallStepColor(step) : '#12203A';
+            },
+            formatter: (value, dctx) => {
+              const step = dctx.chart.stepsRef ? dctx.chart.stepsRef[dctx.dataIndex] : null;
+              return step ? waterfallStepLabel(step) : '';
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { callback: (v) => Math.round(v) + '%', color: '#8A8F7E', font: { size: 11 } }, grid: { color: '#E4E1D8' } },
+          y: { ticks: { color: '#3C4A63', font: { size: 11 } }, grid: { display: false } }
+        }
+      }
+    });
+    return chart;
+  }
+
+  function updateWaterfallChart(chart, wrapId, steps){
+    const labels = steps.map(s => s.label);
+    const ranges = steps.map(s => s.kind === 'anchor' ? [0, s.to] : [s.from, s.to]);
+    const colors = steps.map(waterfallStepColor);
+
+    const allVals = ranges.flat();
+    const minVal = Math.min(0, ...allVals);
+    const maxVal = Math.max(0, ...allVals);
+    const pad = ((maxVal - minVal) || 10) * 0.18;
+
+    document.getElementById(wrapId).style.height = (steps.length * 34 + 60) + 'px';
+
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = ranges;
+    chart.data.datasets[0].backgroundColor = colors;
+    chart.options.scales.x.min = minVal - pad;
+    chart.options.scales.x.max = maxVal + pad;
+    chart.stepsRef = steps;
+    chart.resize();
+    chart.update('none');
+  }
+
+  let giiChart, roaChart;
+
+  // ---------------------------------------------------------------
+  // 6. RENDER — SUMMARY TABLE (label + amount only)
+  // ---------------------------------------------------------------
+  function renderSummaryLineRow({ label, value, sign }){
+    const isCost = sign < 0;
+    return `
+      <tr>
+        <td class="label-cell"><div class="line-label">${label}</div></td>
+        <td class="amount-cell ${isCost ? 'amount-cost' : 'amount-income'}">
+          ${isCost ? formatRupee(-Math.abs(value)) : formatRupee(value)}
+        </td>
+      </tr>`;
+  }
+
+  function renderSubtotalRow(label, formula, value, { grand = false, showFormula = true } = {}){
+    return `
+      <tr class="subtotal-row ${grand ? 'grand-total-row' : ''}">
+        <td class="label-cell">
+          <div class="line-label">${label}</div>
+          ${showFormula ? `<div class="line-formula">${formula}</div>` : ''}
+        </td>
+        <td class="amount-cell">${formatRupee(value)}</td>
+      </tr>`;
+  }
+
+  // ---------------------------------------------------------------
+  // 7. RENDER — DETAIL TABLE (formula + note, individual lines only)
+  //    `formula` on a line can be a plain string or a function(inputs)
+  //    that returns a string — used when the formula's wording depends
+  //    on the selected loan structure (e.g. cooldown vs standard).
+  // ---------------------------------------------------------------
+  function renderDetailRow({ label, formula, note, value, sign }, inputs){
+    const isCost = sign < 0;
+    const formulaText = typeof formula === 'function' ? formula(inputs) : formula;
+    return `
+      <tr>
+        <td class="label-cell">
+          <div class="line-label">${label}</div>
+          <div class="line-formula">${formulaText}</div>
+          ${note ? `<div class="line-note">${note}</div>` : ''}
+        </td>
+        <td class="amount-cell ${isCost ? 'amount-cost' : 'amount-income'}">
+          ${isCost ? formatRupee(-Math.abs(value)) : formatRupee(value)}
+        </td>
+      </tr>`;
+  }
+
+  // ---------------------------------------------------------------
+  // 8. RENDER — MONTHLY SCHEDULES
+  //    Loan EMI Schedule (customer's perspective, at IRR) and Lender
+  //    Cash Flow Schedule (lender's perspective, net of finance cost).
+  //    Both are derived from the same buildSchedule() engine used for
+  //    the P&L, so they always stay consistent with the loan structure
+  //    (standard vs cooldown) and with the Gross Interest Income /
+  //    Finance Cost figures shown above.
+  // ---------------------------------------------------------------
+  function renderEmiRow(row){
+    const isCooldownRow = row.principalPaid === 0;
+    return `
+      <tr class="${isCooldownRow ? 'cooldown-row' : ''}">
+        <td>${row.period}</td>
+        <td>${formatRupee(row.openingBalance)}</td>
+        <td>${formatRupee(row.payment)}</td>
+        <td>${formatRupee(row.interest)}</td>
+        <td>${formatRupee(row.principalPaid)}</td>
+        <td>${formatRupee(row.closingBalance)}</td>
+      </tr>`;
+  }
+
+  function renderCashflowRow({ label, customerCollection, financeCostServiced, otherIncome, otherCosts, net, cumulative, isMonthZero = false }){
+    return `
+      <tr class="${isMonthZero ? 'month-zero-row' : ''}">
+        <td>${label}</td>
+        <td>${customerCollection === null ? '—' : formatRupee(customerCollection)}</td>
+        <td class="${financeCostServiced ? 'neg' : ''}">${financeCostServiced === null ? '—' : formatRupee(-Math.abs(financeCostServiced))}</td>
+        <td>${formatRupee(otherIncome)}</td>
+        <td class="${otherCosts > 0 ? 'neg' : ''}">${formatRupee(-Math.abs(otherCosts))}</td>
+        <td class="${net < 0 ? 'neg' : ''}">${formatRupee(net)}</td>
+        <td class="${cumulative < 0 ? 'neg' : ''}">${formatRupee(cumulative)}</td>
+      </tr>`;
+  }
+
+  function render(){
+    const inputs = readInputs();
+    const r = computeAll(inputs);
+
+    // Summary P&L (all line items + subtotals + final, amounts only)
+    let summaryHtml = '';
+    r.sections.forEach(section => {
+      summaryHtml += section.lines.map(renderSummaryLineRow).join('');
+      summaryHtml += renderSubtotalRow(section.subtotalLabel, section.subtotalFormula, section.subtotalValue, { showFormula: false });
+      if (section.finalLabel){
+        summaryHtml += renderSubtotalRow(section.finalLabel, section.finalFormula, section.finalValue, { grand: true, showFormula: false });
+      }
+    });
+    document.getElementById('plSummaryBody').innerHTML = summaryHtml;
+
+    // Detail table (individual line items only — formula + note)
+    let detailHtml = '';
+    r.sections.forEach(section => {
+      detailHtml += section.lines.map(line => renderDetailRow(line, inputs)).join('');
+    });
+    document.getElementById('plDetailBody').innerHTML = detailHtml;
+
+    // Highlights
+    document.getElementById('hVariableProfit').textContent = formatRupee(r.variableProfit);
+    document.getElementById('hRoaLifetime').textContent = formatPercent(r.roaLifetime);
+    document.getElementById('hRoaAnnualized').textContent = formatPercent(r.roaAnnualized);
+
+    // Composition charts
+    const giiSteps = buildWaterfallSteps(r.sections, r.grossInterestIncome);
+    const roaSteps = buildWaterfallSteps(r.sections, inputs.disbursement);
+    updateWaterfallChart(giiChart, 'wfGiiWrap', giiSteps);
+    updateWaterfallChart(roaChart, 'wfRoaWrap', roaSteps);
+
+    // Loan EMI Schedule (customer's perspective, at IRR)
+    const cooldown = getCooldownMonths(inputs);
+    const customerRows = buildSchedule(inputs.disbursement, inputs.irr, inputs.tenure, cooldown).rows;
+    document.getElementById('emiScheduleBody').innerHTML = customerRows.map(renderEmiRow).join('');
+
+    // Lender Cash Flow Schedule (lender's perspective) — layers every
+    // remaining P&L line into the monthly view with an explicit timing
+    // assumption, so cumulative cash flow reconciles exactly to
+    // Variable Profit by the final month:
+    //  - Month 0: PF Income, Cross Sell Income (inflows) and CAC,
+    //    Processing Costs, CGTMSE Costs (outflows) land at origination,
+    //    alongside the disbursement/funding drawdown wash (net zero).
+    //  - Every month: Salary Costs spread evenly across the tenure.
+    //  - From the presumed-NPA month (Tenure/2) onward: NPA Interest
+    //    Reversal recognized month-by-month (same schedule as the P&L
+    //    line above); Credit Costs recognized as a one-time write-off
+    //    in that first NPA month.
+    const financeRows = buildSchedule(inputs.disbursement, inputs.financeCost, inputs.tenure, cooldown).rows;
+    const npaRows = getNpaScheduleRows(inputs);
+    const npaStart = getNpaStartPeriod(inputs);
+    const creditCostMonth = Math.ceil(npaStart);
+
+    const pfIncome = findLineValue(r.sections, 'pfIncome');
+    const crossSellIncome = findLineValue(r.sections, 'crossSellIncome');
+    const cac = findLineValue(r.sections, 'cac');
+    const processingCosts = findLineValue(r.sections, 'processingCosts');
+    const cgtmseCosts = findLineValue(r.sections, 'cgtmse');
+    const creditCostTotal = findLineValue(r.sections, 'creditCosts');
+    const salaryCostTotal = findLineValue(r.sections, 'salaryCosts');
+    const salaryPerMonth = inputs.tenure !== 0 ? salaryCostTotal / inputs.tenure : 0;
+
+    const otherIncome0 = pfIncome + crossSellIncome;
+    const otherCosts0 = cac + processingCosts + cgtmseCosts;
+    let cumulative = otherIncome0 - otherCosts0;
+
+    let cashflowHtml = renderCashflowRow({
+      label: 'Disbursement / Funding Drawdown (Month 0)',
+      customerCollection: null, financeCostServiced: null,
+      otherIncome: otherIncome0, otherCosts: otherCosts0,
+      net: otherIncome0 - otherCosts0, cumulative, isMonthZero: true
+    });
+
+    customerRows.forEach((c, idx) => {
+      const f = financeRows[idx];
+      const npaRow = npaRows[idx];
+      const period = c.period;
+      const npaReversalThisMonth = period >= npaStart ? npaRow.interest : 0;
+      const creditCostThisMonth = period === creditCostMonth ? creditCostTotal : 0;
+      const otherCosts = salaryPerMonth + npaReversalThisMonth + creditCostThisMonth;
+
+      const customerCollection = c.payment;
+      const financeCostServiced = f.payment;
+      const net = customerCollection - financeCostServiced - otherCosts;
+      cumulative += net;
+
+      cashflowHtml += renderCashflowRow({
+        label: 'Month ' + period,
+        customerCollection, financeCostServiced,
+        otherIncome: 0, otherCosts, net, cumulative
+      });
+    });
+    document.getElementById('cashflowScheduleBody').innerHTML = cashflowHtml;
+  }
+
+  // ---------------------------------------------------------------
+  // 8. WIRE UP LIVE RECALC
+  // ---------------------------------------------------------------
+  giiChart = createWaterfallChart('wfGiiChart');
+  roaChart = createWaterfallChart('wfRoaChart');
+
+  document.getElementById('loanType').addEventListener('change', (e) => {
+    document.getElementById('cooldownField').style.display = e.target.value === 'cooldown' ? 'flex' : 'none';
+    render();
+  });
+
+  [
+    'disbursement','irr','tenure','cooldownMonths','financeCost',
+    'pfIncomeRate','crossSellIncomeRate',
+    'cacRate','processingCostRate','lossRate','cgtmseRate','salaryCostRate'
+  ].forEach(id => {
+    document.getElementById(id).addEventListener('input', render);
+  });
+
+  // ---------------------------------------------------------------
+  // 9. EXPORT — EXCEL (ExcelJS, styled to match the on-screen design)
+  //    Rebuilds every table from the same readInputs/computeAll/
+  //    buildSchedule functions used on screen, so the export always
+  //    matches what's currently displayed. Numbers are written as
+  //    raw values (not formatted strings) so they stay usable in Excel.
+  // ---------------------------------------------------------------
+  function round2(v){ return Math.round(v * 100) / 100; }
+
+  // Color palette mirrored from the CSS custom properties, as ARGB hex
+  // (ExcelJS needs a leading alpha channel: 'FF' + the 6-digit hex).
+  const XL = {
+    ink: 'FF12203A',
+    inkSoft: 'FF3C4A63',
+    white: 'FFFFFFFF',
+    paper: 'FFFAF8F4',
+    panel: 'FFFFFFFF',
+    zebra: 'FFF6F4EF',
+    line: 'FFE4E1D8',
+    subtotalBg: 'FFE7EEF5',
+    subtotalBorder: 'FFC9D7E6',
+    cooldownBg: 'FFFBF3E3',
+    costText: 'FFA13D2B',
+    profitText: 'FF1C6E4A',
+    mutedText: 'FF8A8F7E'
+  };
+  // Custom format "#,##,##0" groups digits in the Indian lakh/crore
+  // style (right-most group of 3, then groups of 2). Negative values
+  // render in red with parentheses, matching the on-screen convention.
+  const INR_FMT = '"₹"#,##,##0;[Red]("₹"#,##,##0)';
+  const PCT_FMT = '0.00"%"';
+
+  const THIN_LINE = { style: 'thin', color: { argb: XL.line } };
+  const THIN_BORDER = { top: THIN_LINE, left: THIN_LINE, bottom: THIN_LINE, right: THIN_LINE };
+  const THIN_BORDER_SUBTOTAL = {
+    top: { style: 'thin', color: { argb: XL.subtotalBorder } },
+    left: { style: 'thin', color: { argb: XL.subtotalBorder } },
+    bottom: { style: 'thin', color: { argb: XL.subtotalBorder } },
+    right: { style: 'thin', color: { argb: XL.subtotalBorder } }
+  };
+
+  // A merged banner across the given column count: a bold title on a
+  // dark ink background (row 1) and a muted subtitle beneath it (row
+  // 2), mirroring the .pl-header card treatment used on screen. Returns
+  // the row number the real column header should start on.
+  function addTitleBanner(ws, title, subtitle, numCols){
+    ws.mergeCells(1, 1, 1, numCols);
+    const titleCell = ws.getCell(1, 1);
+    titleCell.value = title;
+    titleCell.font = { bold: true, size: 14, color: { argb: XL.white } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.ink } };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    ws.getRow(1).height = 26;
+
+    ws.mergeCells(2, 1, 2, numCols);
+    const subCell = ws.getCell(2, 1);
+    subCell.value = subtitle;
+    subCell.font = { italic: true, size: 9.5, color: { argb: XL.inkSoft } };
+    subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.zebra } };
+    subCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    ws.getRow(2).height = 20;
+
+    for (let c = 1; c <= numCols; c++){
+      ws.getCell(1, c).border = THIN_BORDER;
+      ws.getCell(2, c).border = THIN_BORDER;
+    }
+    return 3; // header row starts here
+  }
+
+  function styleHeaderRow(row){
+    row.eachCell(cell => {
+      cell.font = { bold: true, color: { argb: XL.white }, size: 10.5 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.ink } };
+      cell.alignment = { vertical: 'middle' };
+      cell.border = THIN_BORDER;
+    });
+    row.height = 22;
+  }
+
+  function styleDataRow(row, { zebra = false } = {}){
+    row.eachCell(cell => {
+      cell.border = THIN_BORDER;
+      if (!cell.font) cell.font = { size: 10, color: { argb: XL.inkSoft } };
+      if (zebra){
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.zebra } };
+      }
+    });
+  }
+
+  function styleSubtotalRow(row){
+    row.eachCell(cell => {
+      cell.font = { bold: true, size: 10.5, color: { argb: XL.ink } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.subtotalBg } };
+      cell.border = THIN_BORDER_SUBTOTAL;
+    });
+  }
+
+  function styleGrandTotalRow(row){
+    row.eachCell(cell => {
+      cell.font = { bold: true, size: 11.5, color: { argb: XL.white } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.ink } };
+      cell.border = THIN_BORDER;
+    });
+    row.height = 22;
+  }
+
+  function styleCooldownRow(row){
+    row.eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.cooldownBg } };
+      cell.border = THIN_BORDER;
+      if (!cell.font) cell.font = { size: 9.5, color: { argb: XL.inkSoft } };
+    });
+  }
+  async function exportToExcel(){
+    if (typeof ExcelJS === 'undefined'){
+      alert('Excel export library failed to load. Check your internet connection and try again.');
+      return;
+    }
+    const btn = document.getElementById('exportExcelBtn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span>Generating…</span>';
+
+    try {
+      const inputs = readInputs();
+      const r = computeAll(inputs);
+      const cooldown = getCooldownMonths(inputs);
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'Lifetime Profitability Calculator';
+      wb.created = new Date();
+
+      // ---- Inputs sheet ----
+      const wsInputs = wb.addWorksheet('Inputs');
+      wsInputs.properties.tabColor = { argb: XL.ink };
+      wsInputs.columns = [{ width: 34 }, { width: 26 }];
+      let hdr = addTitleBanner(wsInputs, 'Lifetime Profitability Calculator', 'Inputs used to generate this export', 2);
+      wsInputs.getRow(hdr).values = ['Input', 'Value'];
+      styleHeaderRow(wsInputs.getRow(hdr));
+
+      const loanTypeLabel = inputs.loanType === 'cooldown' ? 'Cooldown / Moratorium' : 'Standard (EMI from Month 1)';
+      const inputRows = [
+        ['Loan Type', loanTypeLabel],
+        ['Disbursement Amount', inputs.disbursement, INR_FMT],
+        ['IRR (% p.a.)', inputs.irr, '0.00"%"']
+      ];
+      if (inputs.loanType === 'cooldown'){
+        inputRows.push(['Total Tenure (months)', inputs.tenure]);
+        inputRows.push(['Cooldown Period (months)', cooldown]);
+      } else {
+        inputRows.push(['Total Tenure (months)', inputs.tenure]);
+      }
+      inputRows.push(
+        ['Finance Cost Rate (% p.a.)', inputs.financeCost, '0.00"%"'],
+        ['PF Income Rate (%)', inputs.pfIncomeRate, '0.00"%"'],
+        ['Cross Sell Income Rate (%)', inputs.crossSellIncomeRate, '0.00"%"'],
+        ['CAC Rate (%)', inputs.cacRate, '0.00"%"'],
+        ['Processing Cost Rate (%)', inputs.processingCostRate, '0.00"%"'],
+        ['Credit Cost / Loss Rate (%)', inputs.lossRate, '0.00"%"'],
+        ['CGTMSE Cost Rate (%)', inputs.cgtmseRate, '0.00"%"'],
+        ['Salary Cost Rate (%)', inputs.salaryCostRate, '0.00"%"']
+      );
+      inputRows.forEach((rowData, i) => {
+        const row = wsInputs.addRow([rowData[0], rowData[1]]);
+        if (rowData[2]) row.getCell(2).numFmt = rowData[2];
+        styleDataRow(row, { zebra: i % 2 === 1 });
+        row.getCell(1).font = { size: 10, color: { argb: XL.inkSoft } };
+        row.getCell(2).font = { size: 10, bold: true, color: { argb: XL.ink } };
+        row.getCell(2).alignment = { horizontal: 'right' };
+      });
+      wsInputs.views = [{ state: 'frozen', ySplit: hdr }];
+
+      // ---- Summary P&L sheet ----
+      const wsSummary = wb.addWorksheet('Summary PnL');
+      wsSummary.properties.tabColor = { argb: XL.profitText };
+      wsSummary.columns = [{ width: 40 }, { width: 22 }];
+      hdr = addTitleBanner(wsSummary, 'Lifetime Summary P&L', 'Per disbursement cohort — every line item, subtotal, and Variable Profit', 2);
+      wsSummary.getRow(hdr).values = ['Line Item', 'Amount (₹)'];
+      styleHeaderRow(wsSummary.getRow(hdr));
+
+      let zebraToggle = false;
+      r.sections.forEach(section => {
+        section.lines.forEach(line => {
+          const row = wsSummary.addRow([line.label, round2(line.sign * line.value)]);
+          row.getCell(2).numFmt = INR_FMT;
+          row.getCell(2).alignment = { horizontal: 'right' };
+          styleDataRow(row, { zebra: zebraToggle });
+          zebraToggle = !zebraToggle;
+        });
+        const subRow = wsSummary.addRow([section.subtotalLabel, round2(section.subtotalValue)]);
+        subRow.getCell(2).numFmt = INR_FMT;
+        subRow.getCell(2).alignment = { horizontal: 'right' };
+        styleSubtotalRow(subRow);
+        zebraToggle = false;
+        if (section.finalLabel){
+          const finalRow = wsSummary.addRow([section.finalLabel, round2(section.finalValue)]);
+          finalRow.getCell(2).numFmt = INR_FMT;
+          finalRow.getCell(2).alignment = { horizontal: 'right' };
+          styleGrandTotalRow(finalRow);
+        }
+      });
+      const roaRow1 = wsSummary.addRow(['RoA (Lifetime)', round2(r.roaLifetime)]);
+      roaRow1.getCell(2).numFmt = PCT_FMT;
+      roaRow1.getCell(2).alignment = { horizontal: 'right' };
+      styleDataRow(roaRow1, { zebra: false });
+      const roaRow2 = wsSummary.addRow(['RoA (Annualized)', round2(r.roaAnnualized)]);
+      roaRow2.getCell(2).numFmt = PCT_FMT;
+      roaRow2.getCell(2).alignment = { horizontal: 'right' };
+      styleDataRow(roaRow2, { zebra: true });
+      wsSummary.views = [{ state: 'frozen', ySplit: hdr }];
+
+      // ---- Line Item Detail sheet ----
+      const wsDetail = wb.addWorksheet('Line Item Detail');
+      wsDetail.properties.tabColor = { argb: XL.mutedText };
+      wsDetail.columns = [{ width: 28 }, { width: 54 }, { width: 46 }, { width: 18 }];
+      hdr = addTitleBanner(wsDetail, 'Line Item Detail', 'Formula and assumption behind every individual line item', 4);
+      wsDetail.getRow(hdr).values = ['Line Item', 'Formula', 'Note', 'Amount (₹)'];
+      styleHeaderRow(wsDetail.getRow(hdr));
+
+      r.sections.forEach((section, si) => {
+        section.lines.forEach((line, li) => {
+          const formulaText = typeof line.formula === 'function' ? line.formula(inputs) : line.formula;
+          const row = wsDetail.addRow([line.label, formulaText, line.note || '', round2(line.sign * line.value)]);
+          styleDataRow(row, { zebra: (si + li) % 2 === 1 });
+          row.getCell(1).font = { bold: true, size: 10, color: { argb: XL.ink } };
+          row.getCell(2).font = { size: 9, color: { argb: XL.inkSoft } };
+          row.getCell(2).alignment = { wrapText: true, vertical: 'top' };
+          row.getCell(3).font = { italic: true, size: 8.5, color: { argb: 'FFB8862E' } };
+          row.getCell(3).alignment = { wrapText: true, vertical: 'top' };
+          row.getCell(4).numFmt = INR_FMT;
+          row.getCell(4).alignment = { horizontal: 'right', vertical: 'top' };
+          const longestText = Math.max((formulaText || '').length, (line.note || '').length);
+          row.height = Math.max(20, Math.ceil(longestText / 55) * 14);
+        });
+      });
+      wsDetail.views = [{ state: 'frozen', ySplit: hdr }];
+
+      // ---- Loan EMI Schedule sheet (customer's perspective, at IRR) ----
+      const wsEmi = wb.addWorksheet('EMI Schedule');
+      wsEmi.properties.tabColor = { argb: 'FFB8862E' };
+      wsEmi.columns = [
+        { width: 10 }, { width: 20 }, { width: 18 }, { width: 18 }, { width: 18 }, { width: 20 }
+      ];
+      hdr = addTitleBanner(wsEmi, 'Loan Repayment Schedule', "Customer's perspective, at IRR — cooldown months highlighted", 6);
+      wsEmi.getRow(hdr).values = ['Month', 'Opening Balance', 'Payment', 'Interest', 'Principal', 'Closing Balance'];
+      styleHeaderRow(wsEmi.getRow(hdr));
+
+      const customerRows = buildSchedule(inputs.disbursement, inputs.irr, inputs.tenure, cooldown).rows;
+      customerRows.forEach((cr, i) => {
+        const row = wsEmi.addRow([cr.period, round2(cr.openingBalance), round2(cr.payment), round2(cr.interest), round2(cr.principalPaid), round2(cr.closingBalance)]);
+        [2, 3, 4, 5, 6].forEach(c => {
+          row.getCell(c).numFmt = INR_FMT;
+          row.getCell(c).alignment = { horizontal: 'right' };
+        });
+        row.getCell(1).font = { bold: true, size: 10, color: { argb: XL.inkSoft } };
+        if (cr.principalPaid === 0){
+          styleCooldownRow(row);
+        } else {
+          styleDataRow(row, { zebra: i % 2 === 1 });
+        }
+      });
+      wsEmi.views = [{ state: 'frozen', ySplit: hdr }];
+
+      // ---- Lender Cash Flow Schedule sheet (ties to Variable Profit) ----
+      const wsCf = wb.addWorksheet('Lender Cashflow');
+      wsCf.properties.tabColor = { argb: XL.costText };
+      wsCf.columns = [
+        { width: 36 }, { width: 20 }, { width: 22 }, { width: 16 }, { width: 16 }, { width: 18 }, { width: 22 }
+      ];
+      hdr = addTitleBanner(wsCf, 'Lender Cash Flow Schedule', "Lender's perspective — cumulative cash flow reconciles to Variable Profit", 7);
+      wsCf.getRow(hdr).values = ['Month', 'Customer Collection (₹)', 'Finance Cost Serviced (₹)', 'Other Income (₹)', 'Other Costs (₹)', 'Net Cash Flow (₹)', 'Cumulative Cash Flow (₹)'];
+      styleHeaderRow(wsCf.getRow(hdr));
+
+      const financeRows = buildSchedule(inputs.disbursement, inputs.financeCost, inputs.tenure, cooldown).rows;
+      const npaRowsX = getNpaScheduleRows(inputs);
+      const npaStartX = getNpaStartPeriod(inputs);
+      const creditCostMonthX = Math.ceil(npaStartX);
+      const pfIncomeX = findLineValue(r.sections, 'pfIncome');
+      const crossSellIncomeX = findLineValue(r.sections, 'crossSellIncome');
+      const cacX = findLineValue(r.sections, 'cac');
+      const processingCostsX = findLineValue(r.sections, 'processingCosts');
+      const cgtmseCostsX = findLineValue(r.sections, 'cgtmse');
+      const creditCostTotalX = findLineValue(r.sections, 'creditCosts');
+      const salaryCostTotalX = findLineValue(r.sections, 'salaryCosts');
+      const salaryPerMonthX = inputs.tenure !== 0 ? salaryCostTotalX / inputs.tenure : 0;
+
+      const otherIncome0X = pfIncomeX + crossSellIncomeX;
+      const otherCosts0X = cacX + processingCostsX + cgtmseCostsX;
+      let cumulative = otherIncome0X - otherCosts0X;
+      const row0 = wsCf.addRow([
+        'Disbursement / Funding Drawdown (Month 0)', null, null,
+        round2(otherIncome0X), round2(-otherCosts0X), round2(otherIncome0X - otherCosts0X), round2(cumulative)
+      ]);
+      [4, 5, 6, 7].forEach(c => {
+        row0.getCell(c).numFmt = INR_FMT;
+        row0.getCell(c).alignment = { horizontal: 'right' };
+      });
+      styleSubtotalRow(row0);
+
+      customerRows.forEach((c, idx) => {
+        const f = financeRows[idx];
+        const npaRow = npaRowsX[idx];
+        const period = c.period;
+        const npaReversalThisMonth = period >= npaStartX ? npaRow.interest : 0;
+        const creditCostThisMonth = period === creditCostMonthX ? creditCostTotalX : 0;
+        const otherCosts = salaryPerMonthX + npaReversalThisMonth + creditCostThisMonth;
+        const net = c.payment - f.payment - otherCosts;
+        cumulative += net;
+        const row = wsCf.addRow(['Month ' + period, round2(c.payment), round2(-f.payment), round2(0), round2(-otherCosts), round2(net), round2(cumulative)]);
+        [2, 3, 4, 5, 6, 7].forEach(col => {
+          row.getCell(col).numFmt = INR_FMT;
+          row.getCell(col).alignment = { horizontal: 'right' };
+        });
+        row.getCell(1).font = { bold: true, size: 10, color: { argb: XL.inkSoft } };
+        styleDataRow(row, { zebra: idx % 2 === 1 });
+      });
+      wsCf.views = [{ state: 'frozen', ySplit: hdr }];
+
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Lifetime_Profitability_Calculator.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err){
+      alert('Excel export failed: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+  window.exportToExcel = exportToExcel;
+
+  // ---------------------------------------------------------------
+  // 10. EXPORT — PDF (jsPDF + autoTable)
+  //     Builds a native vector PDF (crisp, selectable, searchable text)
+  //     that mirrors the on-screen design system rather than
+  //     screenshotting the DOM. The two waterfall charts are the only
+  //     pieces captured as images (via each canvas's own toDataURL —
+  //     simple, reliable, no sticky-position or canvas-size-limit risk
+  //     the way whole-page DOM screenshotting has). autoTable handles
+  //     pagination natively, so long schedule tables break cleanly
+  //     between rows with the header re-printed on each new page.
+  // ---------------------------------------------------------------
+  const PDF_INK = [18, 32, 58];
+  const PDF_PROFIT = [28, 110, 74];
+  const PDF_COST = [161, 61, 43];
+  const PDF_SUBTOTAL_BG = [231, 238, 245];
+  const PDF_COOLDOWN_BG = [251, 243, 227];
+  const PDF_MUTED = [138, 143, 126];
+  const PDF_LINE = [228, 225, 216];
+
+  function pdfFormatRupee(v){
+    const isNeg = v < 0;
+    const s = 'Rs. ' + Math.round(Math.abs(v)).toLocaleString('en-IN');
+    return isNeg ? '(' + s + ')' : s;
+  }
+
+  // Compact Crore/Lakh form for the tight Key Inputs chip strip, where
+  // a full-precision figure (e.g. "Rs. 1,00,00,000") is too wide to fit
+  // its column and was bleeding into the neighboring chip.
+  function pdfCompactRupee(v){
+    const abs = Math.abs(v);
+    let s;
+    if (abs >= 10000000) s = (v / 10000000).toFixed(2) + ' Cr';
+    else if (abs >= 100000) s = (v / 100000).toFixed(2) + ' L';
+    else s = Math.round(v).toLocaleString('en-IN');
+    return 'Rs. ' + s;
+  }
+
+  // jsPDF's standard 14 fonts only support the Windows-1252 character
+  // set. Characters outside it (₹, Σ, ≥, the true minus sign −) don't
+  // throw an error — they silently render as an unrelated wrong glyph
+  // (Σ → £, ≥ → e, ₹ → ¹, − → a control character), which is what
+  // produced the garbled text in the first export. × and — (em dash)
+  // ARE in Windows-1252, so they're left alone. Applied to every
+  // formula/note string pulled into the PDF from the P&L config.
+  function pdfSafe(str){
+    if (str === null || str === undefined) return str;
+    return String(str)
+      .replace(/₹/g, 'Rs. ')
+      .replace(/Σ/g, 'Total')
+      .replace(/≥/g, '>=')
+      .replace(/−/g, '-');
+  }
+
+  // Shrinks the font size for `text` until it fits within `maxWidth`,
+  // down to a floor, so chip values of varying length never overlap
+  // the neighboring chip. Returns the size it settled on.
+  function pdfFitFontSize(doc, text, maxWidth, baseSize, minSize){
+    let size = baseSize;
+    doc.setFontSize(size);
+    while (doc.getTextWidth(text) > maxWidth && size > minSize){
+      size -= 0.5;
+      doc.setFontSize(size);
+    }
+    return size;
+  }
+
+  async function exportToPDF(){
+    if (typeof window.jspdf === 'undefined'){
+      alert('PDF export library failed to load. Check your internet connection and try again.');
+      return;
+    }
+    const btn = document.getElementById('exportPdfBtn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span>Generating…</span>';
+
+    try {
+      const { jsPDF } = window.jspdf;
+    const inputs = readInputs();
+    const r = computeAll(inputs);
+    const cooldown = getCooldownMonths(inputs);
+    const doc = new jsPDF('p', 'pt', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginX = 40;
+    const usableWidth = pageWidth - marginX * 2;
+    let y = 48;
+
+    function addFooters(){
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++){
+        doc.setPage(i);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(...PDF_MUTED);
+        doc.text('Lifetime Profitability Calculator — Confidential', marginX, pageHeight - 24);
+        doc.text('Page ' + i + ' of ' + pageCount, pageWidth - marginX, pageHeight - 24, { align: 'right' });
+      }
+    }
+
+    function ensureSpace(needed){
+      if (y + needed > pageHeight - 50){
+        doc.addPage();
+        y = 48;
+      }
+    }
+
+    // ---- Header ----
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...PDF_MUTED);
+    doc.text('FP&A · LENDING BOOK', marginX, y);
+    y += 20;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(...PDF_INK);
+    doc.text('Lifetime Profitability Calculator', marginX, y);
+    y += 18;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(60, 74, 99);
+    const subtitleLines = doc.splitTextToSize(
+      'Synthetic lifetime P&L for a new loan disbursement cohort, built up from Interest Income through NIM and NOI to Variable Profit.',
+      usableWidth
+    );
+    doc.text(subtitleLines, marginX, y);
+    y += subtitleLines.length * 12 + 10;
+    doc.setDrawColor(...PDF_LINE);
+    doc.setLineWidth(0.75);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 20;
+
+    // ---- Key inputs strip ----
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...PDF_MUTED);
+    doc.text('KEY INPUTS', marginX, y);
+    y += 14;
+    const loanTypeLabel = inputs.loanType === 'cooldown' ? `Cooldown (${cooldown}m+${inputs.tenure - cooldown}m)` : 'Standard';
+    const inputPairs = [
+      ['Disbursement', pdfCompactRupee(inputs.disbursement)],
+      ['IRR', inputs.irr + '%'],
+      ['Tenure', inputs.tenure + 'm'],
+      ['Loan Type', loanTypeLabel],
+      ['Finance Cost', inputs.financeCost + '%'],
+      ['Credit Cost', inputs.lossRate + '%']
+    ];
+    const chipWidth = usableWidth / inputPairs.length;
+    const chipPadding = 10;
+    inputPairs.forEach((pair, i) => {
+      const cx = marginX + i * chipWidth;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...PDF_MUTED);
+      doc.text(pair[0].toUpperCase(), cx, y);
+      doc.setFont('helvetica', 'bold');
+      const fitSize = pdfFitFontSize(doc, pair[1], chipWidth - chipPadding, 10.5, 7.5);
+      doc.setTextColor(...PDF_INK);
+      doc.text(pair[1], cx, y + 14);
+      doc.setFontSize(10.5); // reset for the next chip's own fit calculation
+    });
+    y += 34;
+
+    // ---- Highlight metrics ----
+    const boxGap = 10;
+    const boxWidth = (usableWidth - boxGap * 2) / 3;
+    const boxHeight = 54;
+    const metrics = [
+      { label: 'VARIABLE PROFIT', value: pdfFormatRupee(r.variableProfit), dark: true },
+      { label: 'ROA (LIFETIME)', value: r.roaLifetime.toFixed(2) + '%', dark: false },
+      { label: 'ROA (ANNUALIZED)', value: r.roaAnnualized.toFixed(2) + '%', dark: false }
+    ];
+    metrics.forEach((m, i) => {
+      const bx = marginX + i * (boxWidth + boxGap);
+      if (m.dark){
+        doc.setFillColor(...PDF_INK);
+        doc.roundedRect(bx, y, boxWidth, boxHeight, 4, 4, 'F');
+        doc.setTextColor(143, 160, 188);
+      } else {
+        doc.setDrawColor(...PDF_LINE);
+        doc.setLineWidth(0.75);
+        doc.roundedRect(bx, y, boxWidth, boxHeight, 4, 4, 'S');
+        doc.setTextColor(...PDF_MUTED);
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.text(m.label, bx + 12, y + 18);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(17);
+      doc.setTextColor(m.dark ? 255 : 18, m.dark ? 255 : 32, m.dark ? 255 : 58);
+      doc.text(m.value, bx + 12, y + 40);
+    });
+    y += boxHeight + 26;
+
+    // ---- Composition charts (captured directly from the live canvases) ----
+    ensureSpace(200);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...PDF_INK);
+    doc.text('Margin Composition — % of Gross Interest Income', marginX, y);
+    y += 10;
+    try {
+      const giiCanvas = document.getElementById('wfGiiChart');
+      const giiImg = giiCanvas.toDataURL('image/png', 1.0);
+      const giiHeight = (giiCanvas.height / giiCanvas.width) * usableWidth;
+      doc.addImage(giiImg, 'PNG', marginX, y, usableWidth, giiHeight);
+      y += giiHeight + 24;
+    } catch (e){ y += 10; }
+
+    ensureSpace(200);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...PDF_INK);
+    doc.text('RoA Tree — % of Disbursement Amount', marginX, y);
+    y += 10;
+    try {
+      const roaCanvas = document.getElementById('wfRoaChart');
+      const roaImg = roaCanvas.toDataURL('image/png', 1.0);
+      const roaHeight = (roaCanvas.height / roaCanvas.width) * usableWidth;
+      doc.addImage(roaImg, 'PNG', marginX, y, usableWidth, roaHeight);
+      y += roaHeight + 10;
+    } catch (e){ y += 10; }
+
+    // ---- Summary P&L table ----
+    doc.addPage();
+    y = 48;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...PDF_INK);
+    doc.text('Lifetime Summary P&L', marginX, y);
+    y += 18;
+
+    const summaryBody = [];
+    const summaryRowTypes = [];
+    r.sections.forEach(section => {
+      section.lines.forEach(line => {
+        summaryBody.push([line.label, pdfFormatRupee(line.sign * line.value)]);
+        summaryRowTypes.push('line');
+      });
+      summaryBody.push([section.subtotalLabel, pdfFormatRupee(section.subtotalValue)]);
+      summaryRowTypes.push('subtotal');
+      if (section.finalLabel){
+        summaryBody.push([section.finalLabel, pdfFormatRupee(section.finalValue)]);
+        summaryRowTypes.push('grand');
+      }
+    });
+    summaryBody.push(['RoA (Lifetime)', r.roaLifetime.toFixed(2) + '%']);
+    summaryRowTypes.push('line');
+    summaryBody.push(['RoA (Annualized)', r.roaAnnualized.toFixed(2) + '%']);
+    summaryRowTypes.push('line');
+
+    doc.autoTable({
+      startY: y,
+      margin: { left: marginX, right: marginX },
+      head: [['Line Item', 'Amount']],
+      body: summaryBody,
+      theme: 'plain',
+      styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 6, lineColor: PDF_LINE, lineWidth: 0.5 },
+      headStyles: { fillColor: PDF_INK, textColor: [255, 255, 255], fontStyle: 'bold' },
+      columnStyles: { 1: { halign: 'right' } },
+      didParseCell: (data) => {
+        if (data.section !== 'body') return;
+        const type = summaryRowTypes[data.row.index];
+        if (type === 'subtotal'){
+          data.cell.styles.fillColor = PDF_SUBTOTAL_BG;
+          data.cell.styles.fontStyle = 'bold';
+        } else if (type === 'grand'){
+          data.cell.styles.fillColor = PDF_INK;
+          data.cell.styles.textColor = [255, 255, 255];
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.fontSize = 11;
+        }
+      }
+    });
+    y = doc.lastAutoTable.finalY + 28;
+
+    // ---- Line Item Detail table ----
+    ensureSpace(80);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...PDF_INK);
+    doc.text('Line Item Detail', marginX, y);
+    y += 18;
+
+    const detailBody = [];
+    r.sections.forEach(section => {
+      section.lines.forEach(line => {
+        const formulaText = typeof line.formula === 'function' ? line.formula(inputs) : line.formula;
+        detailBody.push([
+          line.label,
+          pdfSafe(formulaText),
+          pdfSafe(line.note || ''),
+          pdfFormatRupee(line.sign * line.value)
+        ]);
+      });
+    });
+    doc.autoTable({
+      startY: y,
+      margin: { left: marginX, right: marginX },
+      head: [['Line Item', 'Formula', 'Note', 'Amount']],
+      body: detailBody,
+      theme: 'plain',
+      styles: { font: 'helvetica', fontSize: 8, cellPadding: 6, lineColor: PDF_LINE, lineWidth: 0.5, valign: 'top' },
+      headStyles: { fillColor: PDF_INK, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9.5 },
+      columnStyles: {
+        0: { cellWidth: 95, fontStyle: 'bold', fontSize: 8.5 },
+        1: { cellWidth: 150, textColor: PDF_MUTED },
+        2: { cellWidth: 'auto', textColor: [184, 134, 46], fontStyle: 'italic' },
+        3: { cellWidth: 65, halign: 'right', fontStyle: 'bold' }
+      }
+    });
+    y = doc.lastAutoTable.finalY + 28;
+
+    // ---- Loan EMI Schedule ----
+    doc.addPage();
+    y = 48;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...PDF_INK);
+    doc.text("Loan Repayment Schedule — Customer's Perspective", marginX, y);
+    y += 18;
+
+    const customerRows = buildSchedule(inputs.disbursement, inputs.irr, inputs.tenure, cooldown).rows;
+    const emiBody = customerRows.map(row => [
+      row.period, pdfFormatRupee(row.openingBalance), pdfFormatRupee(row.payment),
+      pdfFormatRupee(row.interest), pdfFormatRupee(row.principalPaid), pdfFormatRupee(row.closingBalance)
+    ]);
+    doc.autoTable({
+      startY: y,
+      margin: { left: marginX, right: marginX },
+      head: [['Month', 'Opening Balance', 'Payment', 'Interest', 'Principal', 'Closing Balance']],
+      body: emiBody,
+      theme: 'plain',
+      styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 5, lineColor: PDF_LINE, lineWidth: 0.5, halign: 'right' },
+      headStyles: { fillColor: PDF_INK, textColor: [255, 255, 255], fontStyle: 'bold' },
+      columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } },
+      didParseCell: (data) => {
+        if (data.section !== 'body') return;
+        if (customerRows[data.row.index].principalPaid === 0){
+          data.cell.styles.fillColor = PDF_COOLDOWN_BG;
+        }
+      }
+    });
+    y = doc.lastAutoTable.finalY + 28;
+
+    // ---- Lender Cash Flow Schedule ----
+    doc.addPage();
+    y = 48;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...PDF_INK);
+    doc.text('Lender Cash Flow Schedule — Ties to Variable Profit', marginX, y);
+    y += 18;
+
+    const financeRows = buildSchedule(inputs.disbursement, inputs.financeCost, inputs.tenure, cooldown).rows;
+    const npaRows = getNpaScheduleRows(inputs);
+    const npaStart = getNpaStartPeriod(inputs);
+    const creditCostMonth = Math.ceil(npaStart);
+    const pfIncome = findLineValue(r.sections, 'pfIncome');
+    const crossSellIncome = findLineValue(r.sections, 'crossSellIncome');
+    const cac = findLineValue(r.sections, 'cac');
+    const processingCosts = findLineValue(r.sections, 'processingCosts');
+    const cgtmseCosts = findLineValue(r.sections, 'cgtmse');
+    const creditCostTotal = findLineValue(r.sections, 'creditCosts');
+    const salaryCostTotal = findLineValue(r.sections, 'salaryCosts');
+    const salaryPerMonth = inputs.tenure !== 0 ? salaryCostTotal / inputs.tenure : 0;
+    const otherIncome0 = pfIncome + crossSellIncome;
+    const otherCosts0 = cac + processingCosts + cgtmseCosts;
+    let cfCumulative = otherIncome0 - otherCosts0;
+
+    const cashflowBody = [[
+      'Disbursement / Funding Drawdown (Month 0)', '—', '—',
+      pdfFormatRupee(otherIncome0), pdfFormatRupee(-otherCosts0),
+      pdfFormatRupee(otherIncome0 - otherCosts0), pdfFormatRupee(cfCumulative)
+    ]];
+    customerRows.forEach((c, idx) => {
+      const f = financeRows[idx];
+      const npaRow = npaRows[idx];
+      const period = c.period;
+      const npaReversalThisMonth = period >= npaStart ? npaRow.interest : 0;
+      const creditCostThisMonth = period === creditCostMonth ? creditCostTotal : 0;
+      const otherCosts = salaryPerMonth + npaReversalThisMonth + creditCostThisMonth;
+      const net = c.payment - f.payment - otherCosts;
+      cfCumulative += net;
+      cashflowBody.push([
+        'Month ' + period, pdfFormatRupee(c.payment), pdfFormatRupee(-f.payment),
+        pdfFormatRupee(0), pdfFormatRupee(-otherCosts), pdfFormatRupee(net), pdfFormatRupee(cfCumulative)
+      ]);
+    });
+    doc.autoTable({
+      startY: y,
+      margin: { left: marginX, right: marginX },
+      head: [['Month', 'Customer Collection', 'Finance Cost Serviced', 'Other Income', 'Other Costs', 'Net Cash Flow', 'Cumulative']],
+      body: cashflowBody,
+      theme: 'plain',
+      styles: { font: 'helvetica', fontSize: 7.5, cellPadding: 4.5, lineColor: PDF_LINE, lineWidth: 0.5, halign: 'right' },
+      headStyles: { fillColor: PDF_INK, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } },
+      didParseCell: (data) => {
+        if (data.section !== 'body') return;
+        if (data.row.index === 0){
+          data.cell.styles.fillColor = PDF_SUBTOTAL_BG;
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    });
+
+    addFooters();
+    // Force a direct download (not an inline blob: URL render) — some
+    // browsers/enterprise content policies block inline PDF rendering
+    // via Chrome's built-in viewer, which doc.save() can trigger. This
+    // mirrors the same Blob+anchor download pattern the Excel export
+    // uses, which only ever saves bytes and never asks the browser to
+    // display anything.
+    const pdfBlob = doc.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    const pdfLink = document.createElement('a');
+    pdfLink.href = pdfUrl;
+    pdfLink.download = 'Lifetime_Profitability_Calculator.pdf';
+    document.body.appendChild(pdfLink);
+    pdfLink.click();
+    document.body.removeChild(pdfLink);
+    URL.revokeObjectURL(pdfUrl);
+    } catch (err){
+      alert('PDF export failed: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+  window.exportToPDF = exportToPDF;
+
+  render();
+})();
+</script>
+</body>
+</html>
