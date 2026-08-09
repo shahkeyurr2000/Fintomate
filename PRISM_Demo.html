@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PRISM — Demo Build (Illustrative Data Only)</title>
+<style>
+  :root{
+    --navy:#1B365D;
+    --navy-dark:#132745;
+    --cyan:#00B4D8;
+    --cyan-soft:#E4F7FB;
+    --bg:#F3F6F9;
+    --card:#FFFFFF;
+    --border:#DCE3EA;
+    --text:#22303F;
+    --text2:#5A6472;
+    --green:#2E9E5B;
+    --red:#C94B4B;
+    --amber:#B9770E;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    font-size:14px;
+  }
+  /* ---------- Demo banner ---------- */
+  .demo-banner{
+    background:linear-gradient(90deg,#FFF7E6,#FFF1D6);
+    border-bottom:1px solid #F0D9A6;
+    color:#7A5300;
+    font-size:12.5px;
+    padding:7px 18px;
+    text-align:center;
+    font-weight:600;
+    letter-spacing:.2px;
+  }
+  /* ---------- Layout ---------- */
+  .shell{display:flex; height:calc(100% - 34px);}
+  .sidebar{
+    width:246px; min-width:246px; background:var(--navy);
+    color:#DCE6F0; display:flex; flex-direction:column;
+    overflow-y:auto;
+  }
+  .brand{
+    padding:18px 18px 14px 18px; border-bottom:1px solid rgba(255,255,255,.12);
+  }
+  .brand .name{font-size:19px; font-weight:800; color:#fff; letter-spacing:.4px;}
+  .brand .sub{font-size:11px; color:var(--cyan); margin-top:3px; font-weight:600; text-transform:uppercase; letter-spacing:.6px;}
+  .nav-section{padding:14px 10px 4px 10px;}
+  .nav-section-title{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.9px;
+    color:#8CA3BE; padding:6px 10px 6px 10px; font-weight:700;
+  }
+  .nav-item{
+    display:flex; align-items:center; gap:9px;
+    padding:9px 12px; margin:1px 4px; border-radius:8px;
+    cursor:pointer; font-size:13.2px; color:#D6E2EE; font-weight:500;
+    transition:background .12s ease;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.08);}
+  .nav-item.active{background:var(--cyan); color:#08303D; font-weight:700;}
+  .nav-item .dot{width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.55; flex-shrink:0;}
+  .sidebar-foot{
+    margin-top:auto; padding:14px 18px; font-size:10.6px; color:#7E97B3;
+    border-top:1px solid rgba(255,255,255,.1);
+  }
+
+  .main{flex:1; overflow-y:auto;}
+  .topbar{
+    background:#fff; border-bottom:1px solid var(--border);
+    padding:14px 26px; display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:5;
+  }
+  .topbar h1{font-size:19px; margin:0; color:var(--navy); font-weight:800;}
+  .topbar .crumb{font-size:12px; color:var(--text2); margin-top:2px;}
+  .controls{display:flex; align-items:center; gap:10px;}
+  select{
+    border:1px solid var(--border); border-radius:8px; padding:7px 12px;
+    font-size:13px; color:var(--text); background:#fff; font-weight:600;
+  }
+  .pill-btn{
+    border:1px solid var(--border); background:#fff; border-radius:8px;
+    padding:7px 13px; font-size:12.5px; color:var(--text2); font-weight:600;
+  }
+
+  .content{padding:22px 26px 60px 26px;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  /* ---------- Cards / KPI strip ---------- */
+  .kpi-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:22px;}
+  .kpi-card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:16px 18px; position:relative; overflow:hidden;
+  }
+  .kpi-card::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--cyan);
+  }
+  .kpi-label{font-size:11.3px; color:var(--text2); font-weight:700; text-transform:uppercase; letter-spacing:.4px;}
+  .kpi-value{font-size:24px; font-weight:800; color:var(--navy); margin-top:6px;}
+  .kpi-delta{font-size:12px; font-weight:700; margin-top:5px;}
+  .kpi-delta.up{color:var(--green);}
+  .kpi-delta.down{color:var(--red);}
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:20px 22px; margin-bottom:20px;
+  }
+  .card h2{font-size:15.5px; margin:0 0 4px 0; color:var(--navy); font-weight:800;}
+  .card .desc{font-size:12.3px; color:var(--text2); margin-bottom:14px;}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{
+    background:var(--navy); color:#fff; text-align:right; font-size:11.7px;
+    padding:9px 12px; font-weight:700; letter-spacing:.2px;
+  }
+  th:first-child, td:first-child{text-align:left;}
+  td{padding:8px 12px; text-align:right; border-bottom:1px solid #EEF2F6; color:var(--text);}
+  tr.subtotal td{background:var(--cyan-soft); font-weight:800; color:var(--navy);}
+  tr.section-label td{background:#F7F9FB; font-weight:700; color:var(--text2); font-size:11.6px; text-transform:uppercase; letter-spacing:.3px; padding-top:12px;}
+  td.pos{color:var(--green); font-weight:700;}
+  td.neg{color:var(--red); font-weight:700;}
+  td.rowlabel{color:var(--text); font-weight:600;}
+
+  .grid-2{display:grid; grid-template-columns:1.3fr 1fr; gap:20px;}
+  @media (max-width:980px){ .grid-2{grid-template-columns:1fr;} }
+
+  /* bar chart */
+  .barchart{display:flex; align-items:flex-end; gap:14px; height:190px; padding:10px 4px 0 4px;}
+  .bargroup{flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end;}
+  .bars{display:flex; gap:4px; align-items:flex-end; height:150px;}
+  .bar{width:16px; border-radius:4px 4px 0 0;}
+  .bar.actual{background:var(--navy);}
+  .bar.plan{background:var(--cyan);}
+  .bargroup .mlabel{margin-top:8px; font-size:11.5px; color:var(--text2); font-weight:600;}
+  .legend{display:flex; gap:16px; font-size:12px; color:var(--text2); margin-bottom:6px;}
+  .legend span{display:flex; align-items:center; gap:6px;}
+  .swatch{width:10px; height:10px; border-radius:3px; display:inline-block;}
+
+  /* donut */
+  .donut-wrap{display:flex; align-items:center; gap:22px;}
+  .donut{width:150px; height:150px; border-radius:50%; flex-shrink:0;}
+  .donut-legend{font-size:12.3px; color:var(--text); display:flex; flex-direction:column; gap:7px;}
+  .donut-legend .row{display:flex; align-items:center; gap:8px;}
+  .lg-sw{width:10px; height:10px; border-radius:3px; flex-shrink:0;}
+  .slide .donut-legend{color:#E9F0F6; position:relative; z-index:1;}
+  .slide .donut{position:relative; z-index:1; box-shadow:0 0 0 4px rgba(255,255,255,.06);}
+
+  /* OKR */
+  .okr-item{border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:12px;}
+  .okr-top{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;}
+  .okr-title{font-weight:700; color:var(--navy); font-size:13.6px;}
+  .okr-owner{font-size:11.5px; color:var(--text2);}
+  .status-pill{font-size:10.8px; font-weight:800; padding:3px 10px; border-radius:999px; letter-spacing:.3px;}
+  .status-ontrack{background:#E4F7FB; color:#0C7593;}
+  .status-achieved{background:#E6F6EC; color:#1F7A44;}
+  .status-atrisk{background:#FDECEC; color:#B23A3A;}
+  .progress-track{background:#EEF2F6; border-radius:999px; height:9px; overflow:hidden;}
+  .progress-fill{height:100%; border-radius:999px; background:linear-gradient(90deg,var(--navy),var(--cyan));}
+  .progress-num{font-size:11.5px; color:var(--text2); margin-top:5px; text-align:right; font-weight:700;}
+
+  /* Presentation slides */
+  .slide{
+    background:var(--navy); color:#fff; border-radius:14px; padding:26px 30px;
+    margin-bottom:20px; position:relative; overflow:hidden;
+  }
+  .slide::after{content:""; position:absolute; right:-40px; top:-40px; width:160px; height:160px; border-radius:50%; background:rgba(0,180,216,.18);}
+  .slide h3{margin:0 0 4px 0; font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--cyan); font-weight:800;}
+  .slide h2{margin:0 0 14px 0; font-size:21px; font-weight:800;}
+  .slide ul{margin:0; padding-left:18px; position:relative; z-index:1;}
+  .slide li{margin-bottom:8px; font-size:13.6px; line-height:1.5; color:#E9F0F6;}
+  .slide .stat-row{display:flex; gap:26px; margin-top:16px; position:relative; z-index:1;}
+  .slide .stat b{display:block; font-size:22px; color:#fff;}
+  .slide .stat span{font-size:11px; color:#AFC6DA; text-transform:uppercase; letter-spacing:.4px;}
+
+  .tag{display:inline-block; font-size:10.6px; font-weight:700; padding:2px 8px; border-radius:6px; background:#EEF2F6; color:var(--text2);}
+  .footnote{font-size:11.3px; color:var(--text2); font-style:italic; margin-top:6px;}
+  code.gl{font-family:"DM Mono",Consolas,monospace; font-size:12px; color:var(--navy); font-weight:700;}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">⚠ DEMONSTRATION BUILD — layout &amp; workflow only. All figures, GL codes/names, lender names and channel names on this page are fictional and for illustration purposes only.</div>
+
+<div class="shell">
+  <!-- ================= SIDEBAR ================= -->
+  <div class="sidebar">
+    <div class="brand">
+      <div class="name">PRISM</div>
+      <div class="sub">Demo Build · Illustrative</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">P&amp;L</div>
+      <div class="nav-item active" data-tab="tab-bizpl" onclick="showTab('tab-bizpl',this)"><span class="dot"></span>Business P&amp;L</div>
+      <div class="nav-item" data-tab="tab-varpl" onclick="showTab('tab-varpl',this)"><span class="dot"></span>Variable Biz P&amp;L</div>
+      <div class="nav-item" data-tab="tab-ytd" onclick="showTab('tab-ytd',this)"><span class="dot"></span>YTD Dashboard</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Performance</div>
+      <div class="nav-item" data-tab="tab-kpi" onclick="showTab('tab-kpi',this)"><span class="dot"></span>KPI Dashboard</div>
+      <div class="nav-item" data-tab="tab-okr" onclick="showTab('tab-okr',this)"><span class="dot"></span>OKR Dashboard</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Balance Sheet</div>
+      <div class="nav-item" data-tab="tab-bs" onclick="showTab('tab-bs',this)"><span class="dot"></span>Balance Sheet</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Mapping</div>
+      <div class="nav-item" data-tab="tab-map" onclick="showTab('tab-map',this)"><span class="dot"></span>GL Mapping</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Schedules</div>
+      <div class="nav-item" data-tab="tab-sched" onclick="showTab('tab-sched',this)"><span class="dot"></span>Funding Schedule</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Reporting</div>
+      <div class="nav-item" data-tab="tab-pres" onclick="showTab('tab-pres',this)"><span class="dot"></span>Presentation</div>
+    </div>
+
+    <div class="sidebar-foot">Demo Build v1.0<br>Fictional data · for illustration only</div>
+  </div>
+
+  <!-- ================= MAIN ================= -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="page-title">Business P&amp;L</h1>
+        <div class="crumb" id="page-crumb">P&amp;L / Business P&amp;L</div>
+      </div>
+      <div class="controls">
+        <select id="monthSelect" onchange="onMonthChange()">
+          <option value="Apr-26">Apr-26</option>
+          <option value="May-26">May-26</option>
+          <option value="Jun-26" selected>Jun-26</option>
+        </select>
+        <button class="pill-btn">⤓ Export to Excel</button>
+        <button class="pill-btn">💾 Save Hub</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ========== BUSINESS P&L ========== -->
+      <div class="tab-panel active" id="tab-bizpl">
+        <div class="kpi-row" id="bizpl-kpis"></div>
+
+        <div class="card">
+          <h2>Consolidated Business P&amp;L</h2>
+          <div class="desc">All figures $ mn · Actual vs Plan for the selected month · totals are calculated automatically from the lines above them</div>
+          <table id="bizpl-table"></table>
+          <div class="footnote">Illustrative GL groupings only — line items are fictional and do not reflect any real chart of accounts.</div>
+        </div>
+
+        <div class="card">
+          <h2>Channel-wise Contribution</h2>
+          <div class="desc">Revenue and EBITDA split across business channels for the selected month (fictional channel names)</div>
+          <table id="bizpl-channel-table"></table>
+        </div>
+      </div>
+
+      <!-- ========== VARIABLE BIZ P&L ========== -->
+      <div class="tab-panel" id="tab-varpl">
+        <div class="card">
+          <h2>Variable Business P&amp;L — Contribution View</h2>
+          <div class="desc">Revenue less directly attributable variable costs, by channel — used to assess unit-level profitability before allocating fixed overheads</div>
+          <table id="varpl-table"></table>
+        </div>
+        <div class="card">
+          <h2>Contribution Margin Trend</h2>
+          <div class="desc">Consolidated contribution margin %, last 3 months (illustrative)</div>
+          <div class="legend">
+            <span><span class="swatch" style="background:var(--navy)"></span>Actual</span>
+            <span><span class="swatch" style="background:var(--cyan)"></span>Plan</span>
+          </div>
+          <div class="barchart" id="varpl-chart"></div>
+        </div>
+      </div>
+
+      <!-- ========== YTD DASHBOARD ========== -->
+      <div class="tab-panel" id="tab-ytd">
+        <div class="kpi-row" id="ytd-kpis"></div>
+        <div class="grid-2">
+          <div class="card">
+            <h2>Revenue — Actual vs Plan (YTD Trend)</h2>
+            <div class="desc">Monthly trend, cumulative through the selected month</div>
+            <div class="legend">
+              <span><span class="swatch" style="background:var(--navy)"></span>Actual</span>
+              <span><span class="swatch" style="background:var(--cyan)"></span>Plan</span>
+            </div>
+            <div class="barchart" id="ytd-chart"></div>
+          </div>
+          <div class="card">
+            <h2>YTD Variance Summary</h2>
+            <div class="desc">Cumulative Actual vs Plan, key lines</div>
+            <table id="ytd-var-table"></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== KPI DASHBOARD ========== -->
+      <div class="tab-panel" id="tab-kpi">
+        <div class="card">
+          <h2>Key Performance Indicators</h2>
+          <div class="desc">Business and portfolio metrics for the selected month, with change vs prior month</div>
+          <div class="kpi-row" id="kpi-cards"></div>
+        </div>
+      </div>
+
+      <!-- ========== OKR DASHBOARD ========== -->
+      <div class="tab-panel" id="tab-okr">
+        <div class="card">
+          <h2>Objectives &amp; Key Results — FY26</h2>
+          <div class="desc">Illustrative objective tracking, refreshed each period against the same underlying dataset</div>
+          <div id="okr-list"></div>
+        </div>
+      </div>
+
+      <!-- ========== BALANCE SHEET ========== -->
+      <div class="tab-panel" id="tab-bs">
+        <div class="card">
+          <h2>Summary Balance Sheet</h2>
+          <div class="desc">$ mn · illustrative closing position, selected month vs prior month</div>
+          <table id="bs-table"></table>
+        </div>
+      </div>
+
+      <!-- ========== MAPPING ========== -->
+      <div class="tab-panel" id="tab-map">
+        <div class="card">
+          <h2>GL Mapping Reference</h2>
+          <div class="desc">Shows how source ledger codes are grouped into standard reporting lines — fictional codes shown for illustration</div>
+          <table id="map-table"></table>
+        </div>
+      </div>
+
+      <!-- ========== SCHEDULES ========== -->
+      <div class="tab-panel" id="tab-sched">
+        <div class="card">
+          <h2>Funding / Borrowing Schedule</h2>
+          <div class="desc">Illustrative lender-wise facility summary — lender names and terms are fictional</div>
+          <table id="sched-table"></table>
+        </div>
+      </div>
+
+      <!-- ========== PRESENTATION ========== -->
+      <div class="tab-panel" id="tab-pres">
+        <div class="slide">
+          <h3>Slide 1</h3>
+          <h2>Executive Summary</h2>
+          <ul>
+            <li>Revenue grew for the third straight month, ahead of plan for the selected period.</li>
+            <li>EBITDA margin held broadly flat despite continued investment in new channels.</li>
+            <li>Portfolio quality remained within target range for the period.</li>
+            <li>Two channels together contributed just under half of total disbursement.</li>
+          </ul>
+          <div class="stat-row">
+            <div class="stat"><b id="pres-rev">—</b><span>Revenue, $mn</span></div>
+            <div class="stat"><b id="pres-ebitda">—</b><span>EBITDA, $mn</span></div>
+            <div class="stat"><b id="pres-aum">—</b><span>AUM, $mn</span></div>
+          </div>
+        </div>
+        <div class="slide">
+          <h3>Slide 2</h3>
+          <h2>Channel Performance Highlights</h2>
+          <div class="donut-wrap">
+            <div class="donut" id="pres-donut"></div>
+            <div class="donut-legend" id="pres-donut-legend"></div>
+          </div>
+        </div>
+        <div class="slide">
+          <h3>Slide 3</h3>
+          <h2>Outlook &amp; Priorities — Next Quarter</h2>
+          <ul>
+            <li>Continue scaling the two fastest-growing partner channels.</li>
+            <li>Hold cost of borrowing broadly flat despite funding market movement.</li>
+            <li>Maintain portfolio quality guardrails as disbursement volume increases.</li>
+            <li>Progress the new digital partner channel toward launch.</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DEMO DATA — entirely fictional, for illustration only
+   ============================================================ */
+const MONTHS = ["Apr-26","May-26","Jun-26"];
+
+const CHANNELS = [
+  {name:"Digital Direct",        w:0.22, color:"#1B365D", costFactor:0.90, marginFactor:1.12},
+  {name:"Partner Network",       w:0.18, color:"#00B4D8", costFactor:1.05, marginFactor:0.95},
+  {name:"Marketplace Alliance",  w:0.14, color:"#5B8FB9", costFactor:1.15, marginFactor:0.85},
+  {name:"Organic / Website",     w:0.12, color:"#8FC1D8", costFactor:0.80, marginFactor:1.25},
+  {name:"Merchant & POS",        w:0.10, color:"#9AD1C7", costFactor:1.10, marginFactor:0.90},
+  {name:"Retail Program",        w:0.09, color:"#C7D3DC", costFactor:1.00, marginFactor:1.00},
+  {name:"Structured Fin. – Vehicle", w:0.08, color:"#7E8FA6", costFactor:0.95, marginFactor:1.05},
+  {name:"Structured Fin. – Dealer",  w:0.07, color:"#B7C4CE", costFactor:1.20, marginFactor:0.80},
+];
+// normalise factors so the weighted split still foots to the consolidated totals
+(function(){
+  const wSum = CHANNELS.reduce((a,c)=>a+c.w*c.costFactor,0);
+  CHANNELS.forEach(c=>{ c.costW = (c.w*c.costFactor)/wSum; });
+  const mSum = CHANNELS.reduce((a,c)=>a+c.w*c.marginFactor,0);
+  CHANNELS.forEach(c=>{ c.ebitdaW = (c.w*c.marginFactor)/mSum; });
+})();
+
+// Raw P&L lines by month: [actual, plan], income positive, cost negative
+const PL_RAW = {
+  "Apr-26": {
+    interestIncome:[38.0,36.5], feeIncome:[4.2,4.0], otherIncome:[0.8,0.7],
+    costOfBorrowing:[-12.8,-12.2], provision:[-2.2,-2.0],
+    employeeCost:[-5.8,-5.5], techCost:[-1.4,-1.3], marketingCost:[-1.2,-1.0], adminCost:[-0.9,-0.9],
+    depreciation:[-0.6,-0.6], financeCost:[-0.4,-0.4]
+  },
+  "May-26": {
+    interestIncome:[39.5,37.8], feeIncome:[4.5,4.2], otherIncome:[0.9,0.8],
+    costOfBorrowing:[-13.2,-12.6], provision:[-2.4,-2.1],
+    employeeCost:[-6.0,-5.7], techCost:[-1.5,-1.3], marketingCost:[-1.3,-1.1], adminCost:[-0.9,-0.9],
+    depreciation:[-0.6,-0.6], financeCost:[-0.4,-0.4]
+  },
+  "Jun-26": {
+    interestIncome:[41.0,39.2], feeIncome:[4.8,4.4], otherIncome:[1.0,0.8],
+    costOfBorrowing:[-13.7,-13.0], provision:[-2.6,-2.2],
+    employeeCost:[-6.2,-5.8], techCost:[-1.6,-1.4], marketingCost:[-1.5,-1.2], adminCost:[-1.0,-0.9],
+    depreciation:[-0.7,-0.6], financeCost:[-0.5,-0.4]
+  }
+};
+
+const KPI_RAW = {
+  "Apr-26": {aum:512, disb:58, accounts:141000, gnpa:1.9, yield:15.0, cob:9.7, opexRatio:3.3, roa:2.2},
+  "May-26": {aum:524, disb:60, accounts:145000, gnpa:1.85,yield:15.1, cob:9.65,opexRatio:3.2, roa:2.3},
+  "Jun-26": {aum:538, disb:63, accounts:149500, gnpa:1.8, yield:15.2, cob:9.6, opexRatio:3.1, roa:2.4}
+};
+
+const OKRS = [
+  {title:"Scale AUM to $600mn by FY-end", owner:"Business Growth", pct:78, status:"ontrack"},
+  {title:"Grow non-flagship channels to 45% of disbursement", owner:"Channel Strategy", pct:61, status:"ontrack"},
+  {title:"Hold GNPA below 2.0%", owner:"Credit & Risk", pct:92, status:"achieved"},
+  {title:"Reduce cost of borrowing by 40 bps", owner:"Treasury", pct:35, status:"atrisk"},
+  {title:"Launch new digital partner channel", owner:"Partnerships", pct:50, status:"ontrack"},
+];
+
+const GL_MAP = [
+  ["4001","Interest on Term Loans","Interest Income","Business Unit"],
+  ["4002","Processing Fee – Retail","Processing Fee Income","Business Unit"],
+  ["4003","Other Recoveries","Other Operating Income","Business Unit"],
+  ["5001","Interest on Borrowings","Cost of Borrowing","Corporate"],
+  ["5002","Provision for Loan Losses","Loan Loss Provision","Business Unit"],
+  ["6001","Salaries & Bonuses","Employee Costs","Corporate"],
+  ["6002","Platform Hosting & Licences","Technology & Platform Costs","Corporate"],
+  ["6003","Lead Generation Spend","Marketing & Acquisition Costs","Business Unit"],
+  ["6004","Office & Admin Expenses","Admin & Other Overheads","Corporate"],
+];
+
+const SCHEDULE = [
+  ["Lender Alpha","Term Loan",80,62,18,10.1,"Sep-2027"],
+  ["Lender Beta","NCD",60,60,0,9.8,"Mar-2028"],
+  ["Lender Gamma","Cash Credit",40,21,19,10.4,"Revolving"],
+  ["Lender Delta","Term Loan",55,38,17,9.9,"Jan-2029"],
+  ["Lender Epsilon","ECB",70,45,25,8.7,"Jun-2030"],
+];
+
+const BS = {
+  "Jun-26": {loanBook:538,cash:34,fixedOther:19, borrowings:462,otherLiab:26,shareCap:20,reserves:83},
+  "May-26": {loanBook:524,cash:31,fixedOther:18, borrowings:449,otherLiab:24,shareCap:20,reserves:80},
+};
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function fmt(v){
+  const av = Math.abs(v).toFixed(1);
+  return v < 0 ? `(${av})` : av;
+}
+function fmtPct(v){ return (v>=0?"+":"") + v.toFixed(1) + "%"; }
+function cls(v){ return v>=0 ? "pos" : "neg"; }
+
+function sum(pairArr, idx){ return pairArr.reduce((a,p)=>a+p[idx],0); }
+
+function computePL(month){
+  const d = PL_RAW[month];
+  const rev = [d.interestIncome, d.feeIncome, d.otherIncome];
+  const totalRevenue = [sum(rev,0), sum(rev,1)];
+  const direct = [d.costOfBorrowing, d.provision];
+  const totalDirect = [sum(direct,0), sum(direct,1)];
+  const nim = [totalRevenue[0]+totalDirect[0], totalRevenue[1]+totalDirect[1]];
+  const opex = [d.employeeCost, d.techCost, d.marketingCost, d.adminCost];
+  const totalOpex = [sum(opex,0), sum(opex,1)];
+  const ebitda = [nim[0]+totalOpex[0], nim[1]+totalOpex[1]];
+  const ebit = [ebitda[0]+d.depreciation[0], ebitda[1]+d.depreciation[1]];
+  const pbt = [ebit[0]+d.financeCost[0], ebit[1]+d.financeCost[1]];
+  return {d, totalRevenue, totalDirect, nim, totalOpex, ebitda, ebit, pbt};
+}
+
+function plRow(label, pair, opts={}){
+  const [a,p] = pair;
+  const v = a-p;
+  const vp = p!==0 ? (v/Math.abs(p)*100) : 0;
+  const rowClass = opts.subtotal ? "subtotal" : "";
+  return `<tr class="${rowClass}">
+    <td class="rowlabel">${label}</td>
+    <td>${fmt(a)}</td>
+    <td>${fmt(p)}</td>
+    <td class="${cls(v)}">${v>=0?"+":""}${fmt(v)}</td>
+    <td class="${cls(v)}">${fmtPct(vp)}</td>
+  </tr>`;
+}
+
+function sectionRow(label){
+  return `<tr class="section-label"><td colspan="5">${label}</td></tr>`;
+}
+
+function headerRow(cols){
+  return `<tr>${cols.map(c=>`<th>${c}</th>`).join("")}</tr>`;
+}
+
+/* ============================================================
+   RENDER: BUSINESS P&L
+   ============================================================ */
+function renderBizPL(month){
+  const c = computePL(month);
+  document.getElementById("bizpl-kpis").innerHTML = `
+    ${kpiCard("Total Revenue", fmt(c.totalRevenue[0]), c.totalRevenue[0]-c.totalRevenue[1])}
+    ${kpiCard("EBITDA", fmt(c.ebitda[0]), c.ebitda[0]-c.ebitda[1])}
+    ${kpiCard("EBITDA Margin", (c.ebitda[0]/c.totalRevenue[0]*100).toFixed(1)+"%", null)}
+    ${kpiCard("PBT", fmt(c.pbt[0]), c.pbt[0]-c.pbt[1])}
+  `;
+
+  let html = headerRow(["$ mn","Actual","Plan","Var.","Var. %"]);
+  html += sectionRow("Income");
+  html += plRow("Interest Income", c.d.interestIncome);
+  html += plRow("Processing Fee Income", c.d.feeIncome);
+  html += plRow("Other Operating Income", c.d.otherIncome);
+  html += plRow("Total Revenue", c.totalRevenue, {subtotal:true});
+
+  html += sectionRow("Direct Costs");
+  html += plRow("Cost of Borrowing", c.d.costOfBorrowing);
+  html += plRow("Loan Loss Provision", c.d.provision);
+  html += plRow("Net Interest Margin (NIM)", c.nim, {subtotal:true});
+
+  html += sectionRow("Operating Expenses");
+  html += plRow("Employee Costs", c.d.employeeCost);
+  html += plRow("Technology & Platform Costs", c.d.techCost);
+  html += plRow("Marketing & Acquisition Costs", c.d.marketingCost);
+  html += plRow("Admin & Other Overheads", c.d.adminCost);
+  html += plRow("Total Operating Expenses", c.totalOpex, {subtotal:true});
+
+  html += plRow("EBITDA", c.ebitda, {subtotal:true});
+  html += plRow("Depreciation & Amortisation", c.d.depreciation);
+  html += plRow("EBIT", c.ebit, {subtotal:true});
+  html += plRow("Finance Costs (Other)", c.d.financeCost);
+  html += plRow("Profit Before Tax (PBT)", c.pbt, {subtotal:true});
+
+  document.getElementById("bizpl-table").innerHTML = html;
+
+  // channel table
+  let ch = headerRow(["Channel","Revenue","% of Total","EBITDA","EBITDA Margin"]);
+  CHANNELS.forEach(ch1=>{
+    const rev = c.totalRevenue[0]*ch1.w;
+    const eb = c.ebitda[0]*ch1.ebitdaW;
+    ch += `<tr><td class="rowlabel">${ch1.name}</td><td>${rev.toFixed(1)}</td><td>${(ch1.w*100).toFixed(0)}%</td><td>${eb.toFixed(1)}</td><td>${(eb/rev*100).toFixed(1)}%</td></tr>`;
+  });
+  document.getElementById("bizpl-channel-table").innerHTML = ch;
+}
+
+function kpiCard(label, value, delta){
+  let deltaHtml = "";
+  if(delta !== null && delta !== undefined){
+    const up = delta >= 0;
+    deltaHtml = `<div class="kpi-delta ${up?'up':'down'}">${up?'▲':'▼'} ${Math.abs(delta).toFixed(1)} vs plan</div>`;
+  }
+  return `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${deltaHtml}</div>`;
+}
+
+/* ============================================================
+   RENDER: VARIABLE BIZ P&L
+   ============================================================ */
+function renderVarPL(month){
+  const c = computePL(month);
+  let html = headerRow(["Channel","Revenue (Act.)","Variable Cost (Act.)","Contribution","Contribution %"]);
+  const totalVarCost = c.totalDirect[0]; // treat direct costs as "variable" for demo purposes
+  CHANNELS.forEach(ch=>{
+    const rev = c.totalRevenue[0]*ch.w;
+    const vc = totalVarCost*ch.costW;
+    const contrib = rev + vc; // vc already negative
+    html += `<tr><td class="rowlabel">${ch.name}</td><td>${rev.toFixed(1)}</td><td class="neg">${fmt(vc)}</td><td class="${cls(contrib)}">${fmt(contrib)}</td><td>${(contrib/rev*100).toFixed(1)}%</td></tr>`;
+  });
+  html += `<tr class="subtotal"><td>Total</td><td>${c.totalRevenue[0].toFixed(1)}</td><td>${fmt(totalVarCost)}</td><td>${fmt(c.totalRevenue[0]+totalVarCost)}</td><td>${((c.totalRevenue[0]+totalVarCost)/c.totalRevenue[0]*100).toFixed(1)}%</td></tr>`;
+  document.getElementById("varpl-table").innerHTML = html;
+
+  // contribution margin trend chart (3 months)
+  let chartHtml = "";
+  MONTHS.forEach(m=>{
+    const cc = computePL(m);
+    const cmA = (cc.totalRevenue[0]+cc.totalDirect[0])/cc.totalRevenue[0]*100;
+    const cmP = (cc.totalRevenue[1]+cc.totalDirect[1])/cc.totalRevenue[1]*100;
+    const maxH = 150, scale = 2.2;
+    chartHtml += `<div class="bargroup">
+      <div class="bars">
+        <div class="bar actual" style="height:${cmA*scale}px" title="Actual ${cmA.toFixed(1)}%"></div>
+        <div class="bar plan" style="height:${cmP*scale}px" title="Plan ${cmP.toFixed(1)}%"></div>
+      </div>
+      <div class="mlabel">${m}</div>
+    </div>`;
+  });
+  document.getElementById("varpl-chart").innerHTML = chartHtml;
+}
+
+/* ============================================================
+   RENDER: YTD DASHBOARD
+   ============================================================ */
+function renderYTD(month){
+  const idx = MONTHS.indexOf(month);
+  const monthsToDate = MONTHS.slice(0, idx+1);
+  let ytdRevA=0, ytdRevP=0, ytdEbitdaA=0, ytdEbitdaP=0, ytdPbtA=0, ytdPbtP=0;
+  monthsToDate.forEach(m=>{
+    const c = computePL(m);
+    ytdRevA += c.totalRevenue[0]; ytdRevP += c.totalRevenue[1];
+    ytdEbitdaA += c.ebitda[0]; ytdEbitdaP += c.ebitda[1];
+    ytdPbtA += c.pbt[0]; ytdPbtP += c.pbt[1];
+  });
+  const aum = KPI_RAW[month].aum;
+  const disb = monthsToDate.reduce((a,m)=>a+KPI_RAW[m].disb,0);
+
+  document.getElementById("ytd-kpis").innerHTML = `
+    ${kpiCard("Revenue (YTD)", ytdRevA.toFixed(1), ytdRevA-ytdRevP)}
+    ${kpiCard("EBITDA (YTD)", ytdEbitdaA.toFixed(1), ytdEbitdaA-ytdEbitdaP)}
+    ${kpiCard("Disbursement (YTD)", disb.toFixed(0), null)}
+    ${kpiCard("Closing AUM", aum.toFixed(0), null)}
+  `;
+
+  let chartHtml = "";
+  MONTHS.forEach(m=>{
+    const c = computePL(m);
+    const maxH = 150, scale = 2.6;
+    const isFuture = MONTHS.indexOf(m) > idx;
+    chartHtml += `<div class="bargroup" style="opacity:${isFuture?0.35:1}">
+      <div class="bars">
+        <div class="bar actual" style="height:${c.totalRevenue[0]*scale}px" title="Actual ${c.totalRevenue[0].toFixed(1)}"></div>
+        <div class="bar plan" style="height:${c.totalRevenue[1]*scale}px" title="Plan ${c.totalRevenue[1].toFixed(1)}"></div>
+      </div>
+      <div class="mlabel">${m}</div>
+    </div>`;
+  });
+  document.getElementById("ytd-chart").innerHTML = chartHtml;
+
+  let vhtml = headerRow(["$ mn (YTD)","Actual","Plan","Var.","Var. %"]);
+  vhtml += plRow("Total Revenue", [ytdRevA, ytdRevP]);
+  vhtml += plRow("EBITDA", [ytdEbitdaA, ytdEbitdaP]);
+  vhtml += plRow("Profit Before Tax", [ytdPbtA, ytdPbtP], {subtotal:true});
+  document.getElementById("ytd-var-table").innerHTML = vhtml;
+}
+
+/* ============================================================
+   RENDER: KPI DASHBOARD
+   ============================================================ */
+function renderKPI(month){
+  const idx = MONTHS.indexOf(month);
+  const cur = KPI_RAW[month];
+  const prev = idx>0 ? KPI_RAW[MONTHS[idx-1]] : null;
+  const cards = [
+    {label:"AUM ($mn)", val:cur.aum.toFixed(0), raw:cur.aum, prevRaw:prev?prev.aum:null, deltaFmt:(d)=>d.toFixed(0), higherIsGood:true},
+    {label:"Disbursement ($mn)", val:cur.disb.toFixed(0), raw:cur.disb, prevRaw:prev?prev.disb:null, deltaFmt:(d)=>d.toFixed(0), higherIsGood:true},
+    {label:"Active Loan Accounts", val:cur.accounts.toLocaleString(), raw:cur.accounts, prevRaw:prev?prev.accounts:null, deltaFmt:(d)=>d.toLocaleString(undefined,{maximumFractionDigits:0}), higherIsGood:true},
+    {label:"GNPA %", val:cur.gnpa.toFixed(2)+"%", raw:cur.gnpa, prevRaw:prev?prev.gnpa:null, deltaFmt:(d)=>d.toFixed(2)+" pp", higherIsGood:false},
+    {label:"Portfolio Yield %", val:cur.yield.toFixed(2)+"%", raw:cur.yield, prevRaw:prev?prev.yield:null, deltaFmt:(d)=>d.toFixed(2)+" pp", higherIsGood:true},
+    {label:"Cost of Borrowing %", val:cur.cob.toFixed(2)+"%", raw:cur.cob, prevRaw:prev?prev.cob:null, deltaFmt:(d)=>d.toFixed(2)+" pp", higherIsGood:false},
+    {label:"Opex / AUM %", val:cur.opexRatio.toFixed(2)+"%", raw:cur.opexRatio, prevRaw:prev?prev.opexRatio:null, deltaFmt:(d)=>d.toFixed(2)+" pp", higherIsGood:false},
+    {label:"ROA %", val:cur.roa.toFixed(2)+"%", raw:cur.roa, prevRaw:prev?prev.roa:null, deltaFmt:(d)=>d.toFixed(2)+" pp", higherIsGood:true},
+  ];
+  let html = "";
+  cards.forEach(c=>{
+    let deltaHtml = "";
+    if(c.prevRaw !== null){
+      const delta = c.raw - c.prevRaw;
+      const good = c.higherIsGood ? delta>=0 : delta<=0;
+      deltaHtml = `<div class="kpi-delta ${good?'up':'down'}">${delta>=0?'▲':'▼'} ${c.deltaFmt(Math.abs(delta))} vs prior mo.</div>`;
+    }
+    html += `<div class="kpi-card"><div class="kpi-label">${c.label}</div><div class="kpi-value">${c.val}</div>${deltaHtml}</div>`;
+  });
+  document.getElementById("kpi-cards").innerHTML = html;
+}
+
+/* ============================================================
+   RENDER: OKR
+   ============================================================ */
+function renderOKR(){
+  const statusLabel = {ontrack:"On Track", achieved:"Achieved", atrisk:"At Risk"};
+  let html = "";
+  OKRS.forEach(o=>{
+    html += `<div class="okr-item">
+      <div class="okr-top">
+        <div>
+          <div class="okr-title">${o.title}</div>
+          <div class="okr-owner">Owner: ${o.owner}</div>
+        </div>
+        <span class="status-pill status-${o.status}">${statusLabel[o.status]}</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${o.pct}%"></div></div>
+      <div class="progress-num">${o.pct}% complete</div>
+    </div>`;
+  });
+  document.getElementById("okr-list").innerHTML = html;
+}
+
+/* ============================================================
+   RENDER: BALANCE SHEET
+   ============================================================ */
+function renderBS(){
+  const cur = BS["Jun-26"], prev = BS["May-26"];
+  const totalAssetsCur = cur.loanBook+cur.cash+cur.fixedOther;
+  const totalAssetsPrev = prev.loanBook+prev.cash+prev.fixedOther;
+  const totalLECur = cur.borrowings+cur.otherLiab+cur.shareCap+cur.reserves;
+  const totalLEPrev = prev.borrowings+prev.otherLiab+prev.shareCap+prev.reserves;
+
+  let html = headerRow(["$ mn","Jun-26","May-26"]);
+  html += sectionRow("Assets");
+  html += `<tr><td class="rowlabel">Loan Book (Net)</td><td>${cur.loanBook.toFixed(1)}</td><td>${prev.loanBook.toFixed(1)}</td></tr>`;
+  html += `<tr><td class="rowlabel">Cash & Bank Balances</td><td>${cur.cash.toFixed(1)}</td><td>${prev.cash.toFixed(1)}</td></tr>`;
+  html += `<tr><td class="rowlabel">Fixed & Other Assets</td><td>${cur.fixedOther.toFixed(1)}</td><td>${prev.fixedOther.toFixed(1)}</td></tr>`;
+  html += `<tr class="subtotal"><td>Total Assets</td><td>${totalAssetsCur.toFixed(1)}</td><td>${totalAssetsPrev.toFixed(1)}</td></tr>`;
+
+  html += sectionRow("Liabilities & Equity");
+  html += `<tr><td class="rowlabel">Borrowings</td><td>${cur.borrowings.toFixed(1)}</td><td>${prev.borrowings.toFixed(1)}</td></tr>`;
+  html += `<tr><td class="rowlabel">Other Liabilities</td><td>${cur.otherLiab.toFixed(1)}</td><td>${prev.otherLiab.toFixed(1)}</td></tr>`;
+  html += `<tr><td class="rowlabel">Share Capital</td><td>${cur.shareCap.toFixed(1)}</td><td>${prev.shareCap.toFixed(1)}</td></tr>`;
+  html += `<tr><td class="rowlabel">Reserves & Surplus</td><td>${cur.reserves.toFixed(1)}</td><td>${prev.reserves.toFixed(1)}</td></tr>`;
+  html += `<tr class="subtotal"><td>Total Liabilities & Equity</td><td>${totalLECur.toFixed(1)}</td><td>${totalLEPrev.toFixed(1)}</td></tr>`;
+
+  document.getElementById("bs-table").innerHTML = html;
+}
+
+/* ============================================================
+   RENDER: MAPPING
+   ============================================================ */
+function renderMap(){
+  let html = `<tr><th style="text-align:left">GL Code</th><th style="text-align:left">GL Description</th><th style="text-align:left">Mapped Reporting Line</th><th style="text-align:left">Tag</th></tr>`;
+  GL_MAP.forEach(r=>{
+    html += `<tr><td><code class="gl">${r[0]}</code></td><td class="rowlabel">${r[1]}</td><td>${r[2]}</td><td><span class="tag">${r[3]}</span></td></tr>`;
+  });
+  document.getElementById("map-table").innerHTML = html;
+}
+
+/* ============================================================
+   RENDER: SCHEDULES
+   ============================================================ */
+function renderSchedule(){
+  let html = headerRow(["Lender","Facility Type","Sanctioned","Drawn","Undrawn","Rate %","Maturity"]);
+  let totS=0,totD=0,totU=0;
+  SCHEDULE.forEach(r=>{
+    totS+=r[2]; totD+=r[3]; totU+=r[4];
+    html += `<tr><td class="rowlabel">${r[0]}</td><td>${r[1]}</td><td>${r[2].toFixed(1)}</td><td>${r[3].toFixed(1)}</td><td>${r[4].toFixed(1)}</td><td>${r[5].toFixed(1)}%</td><td>${r[6]}</td></tr>`;
+  });
+  html += `<tr class="subtotal"><td>Total</td><td></td><td>${totS.toFixed(1)}</td><td>${totD.toFixed(1)}</td><td>${totU.toFixed(1)}</td><td></td><td></td></tr>`;
+  document.getElementById("sched-table").innerHTML = html;
+}
+
+/* ============================================================
+   RENDER: PRESENTATION
+   ============================================================ */
+function renderPresentation(month){
+  const c = computePL(month);
+  document.getElementById("pres-rev").textContent = c.totalRevenue[0].toFixed(1);
+  document.getElementById("pres-ebitda").textContent = c.ebitda[0].toFixed(1);
+  document.getElementById("pres-aum").textContent = KPI_RAW[month].aum.toFixed(0);
+
+  // donut via conic-gradient
+  let acc = 0, stops = [];
+  CHANNELS.forEach(ch=>{
+    const start = acc*360, end = (acc+ch.w)*360;
+    stops.push(`${ch.color} ${start}deg ${end}deg`);
+    acc += ch.w;
+  });
+  document.getElementById("pres-donut").style.background =
+    `radial-gradient(circle at center, var(--navy) 0 34%, transparent 35%), conic-gradient(${stops.join(",")})`;
+
+  let leg = "";
+  CHANNELS.forEach(ch=>{
+    leg += `<div class="row"><span class="lg-sw" style="background:${ch.color}"></span>${ch.name} — ${(ch.w*100).toFixed(0)}%</div>`;
+  });
+  document.getElementById("pres-donut-legend").innerHTML = leg;
+}
+
+/* ============================================================
+   TAB SWITCHING + MONTH CHANGE
+   ============================================================ */
+const TITLES = {
+  "tab-bizpl":["Business P&L","P&L / Business P&L"],
+  "tab-varpl":["Variable Biz P&L","P&L / Variable Biz P&L"],
+  "tab-ytd":["YTD Dashboard","P&L / YTD Dashboard"],
+  "tab-kpi":["KPI Dashboard","Performance / KPI Dashboard"],
+  "tab-okr":["OKR Dashboard","Performance / OKR Dashboard"],
+  "tab-bs":["Balance Sheet","Balance Sheet"],
+  "tab-map":["GL Mapping","Mapping / GL Mapping"],
+  "tab-sched":["Funding Schedule","Schedules / Funding Schedule"],
+  "tab-pres":["Presentation","Reporting / Presentation"],
+};
+
+function showTab(id, el){
+  document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+  el.classList.add("active");
+  document.getElementById("page-title").textContent = TITLES[id][0];
+  document.getElementById("page-crumb").textContent = TITLES[id][1];
+}
+
+function onMonthChange(){
+  const month = document.getElementById("monthSelect").value;
+  renderAll(month);
+}
+
+function renderAll(month){
+  renderBizPL(month);
+  renderVarPL(month);
+  renderYTD(month);
+  renderKPI(month);
+  renderOKR();
+  renderBS();
+  renderMap();
+  renderSchedule();
+  renderPresentation(month);
+}
+
+renderAll("Jun-26");
+</script>
+</body>
+</html>
