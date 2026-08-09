@@ -1,0 +1,1 @@
+Lifetime Profitability Calculator — a single-file HTML/JS tool that models a loan's full lifetime P&L from disbursement to closure: income, costs, credit risk, and variable profit, with RoA metrics, waterfall charts, EMI/cash-flow schedules, and one-click PDF/Excel export.
